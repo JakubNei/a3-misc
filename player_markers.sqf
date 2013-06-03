@@ -37,8 +37,7 @@ _getNextMarker = {
 	_marker;
 };
 
-a=true; 
-while {a} do {
+while {true} do {
 	  
 	waitUntil {
 		sleep 0.025;
