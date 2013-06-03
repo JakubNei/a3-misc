@@ -2,30 +2,46 @@
 	
 	AUTHOR: aeroson
 	NAME: player_markers.sqf
-	VERSION: 1.5
+	VERSION: 1.7
 	
 	DOWNLOAD & PARTICIPATE:
-	https://github.com/aeroson/a3-misc/player_markers.sqf
+	https://github.com/aeroson/a3-misc/blob/master/player_markers.sqf
 	http://forums.bistudio.com/showthread.php?148577-GET-SET-Loadout-(saves-and-loads-pretty-much-everything)
 	
 	DESCRIPTION:
-	a script to locally mark players on map without polluting global variable namespace
-	all markers are created locally, instead of standart way where markers have to be send over net
-	which allows for very fast and smooth refresh rate
-	it doees also remove all unused markers, instead of leaving them at [0,0]
-	lets BTC mark unconscious players, shows Norrin's revive unconscious units
+	a script to mark players on map
+	all markers are created locally
+	designed to be small and fast
+	lets BTC mark unconscious players
+	shows Norrin's revive unconscious units
+	
+	USAGE:
+	in (client's) init do:
+	execvm "player_markers.sqf"; 
 
 */
 
 if (isDedicated) exitWith {};  
                    
-private ["_marker","_unitNumber","_show","_injured","_text"];
+private ["_marker","_markerText","_temp","_unitNumber","_show","_injured","_text","_index"];
 
- 
-while {true} do {
+_getNextMarker = {
+	private ["_marker"]; 
+	_unitNumber = _unitNumber + 1;
+	_marker = format["um%1",_unitNumber];    
+	if(getMarkerType _marker == "") then {
+		createMarkerLocal [_marker, _this];
+	} else {
+		_marker setMarkerPosLocal _this;
+	};
+	_marker;
+};
+
+a=true; 
+while {a} do {
 	  
 	waitUntil {
-		sleep 0.05;
+		sleep 0.025;
 		true;
 	};
 	
@@ -34,7 +50,8 @@ while {true} do {
 		_show = false;
 		_injured = false;
 	
-		if(side _x == playerSide) then {
+		//if(true) then {
+		if(side _x == playerSide) then {		
 			if((crew vehicle _x) select 0 == _x) then {
 				_show = true;
 			};	    
@@ -58,18 +75,21 @@ while {true} do {
 		};
               	 
 		if(_show) then {
-			_unitNumber = _unitNumber + 1;
-			_marker = format["um%1",_unitNumber];    
-			if(getMarkerType _marker == "") then {
-				createMarkerLocal [_marker, getPos vehicle _x];
-			} else {
-				_marker setMarkerPosLocal getPosATL vehicle _x;
-			};      
-			_marker setMarkerDirLocal getDir vehicle _x;
- 
+						      	
+			_temp = getPosATL vehicle _x;			      		
+        	_marker = _temp call _getNextMarker;
+			_markerText = _temp call _getNextMarker;
+			
+			_temp = ["ColorUnknown","ColorOPFOR","ColorBLUFOR","ColorIndependent","ColorCivilian"] select 1+([east,west,independent,civilian] find side _x);
+			_marker setMarkerColorLocal _temp;  
+			_markerText setMarkerColorLocal _temp;     
+        	
+			_marker setMarkerDirLocal getDir vehicle _x;			 				
+ 			_markerText setMarkerTypeLocal "c_unknown";
+			_markerText setMarkerSizeLocal [0.8,0];
+			  
  			_text = name _x; 
- 			if(vehicle _x != _x) then { 			
- 			    _marker setMarkerColorLocal "ColorBlue"; 			    
+ 			if(vehicle _x != _x) then { 						    
 				if(vehicle _x isKindOf "car") then { 
 					_marker setMarkerTypeLocal "c_car";
 				} else {
@@ -90,38 +110,29 @@ while {true} do {
 				_text = format["[%1]", getText(configFile>>"CfgVehicles">>typeOf vehicle _x>>"DisplayName")]; 
 				if(!isNull driver vehicle _x) then {
 					_text = format["%1 %2", name driver vehicle _x, _text];	
-				};			 	 	
-				if(count crew vehicle _x > 1) then {
-					{
-						if(alive _x && _x != driver vehicle _x) then {
-							_text = format["%1, %2", _text, name _x];
-						};						
-					} forEach crew vehicle _x;
-					/*for "_i" from 1 to (count crew vehicle _x)-1 do {					
-						if(alive (crew vehicle _x select _i)) then {
-							_text = format["%1, %2", _text, name(crew vehicle _x select _i)];
-						};
-					};*/ 
-				};
+				};			 	
+				_index = 0;
+				{
+					if(alive _x && isPlayer _x && _x != driver vehicle _x) then {						
+						_text = format["%1%2 %3", _text, if(_index>0)then{","}else{""}, name _x];
+						_index = _index + 1;
+					};						
+				} forEach crew vehicle _x;
+				_marker setMarkerSizeLocal [0.9,0.9];
 			} else {
 				if(_injured) then {
-					_marker setMarkerColorLocal "ColorRed";
-					_marker setMarkerTypeLocal "dot";
+					_marker setMarkerTypeLocal "waypoint";
 				} else {
-				 	_marker setMarkerColorLocal "ColorBlue";
 					if(leader group _x == _x) then {
 						_marker setMarkerTypeLocal "mil_arrow2";
 					} else {				
-						_marker setMarkerTypeLocal "mil_triangle";
+						_marker setMarkerTypeLocal "mil_arrow";
 					};
-				};				
+				};
+
+				_marker setMarkerSizeLocal [0.5,0.5];				
 			};
-			if(vehicle _x == vehicle player) then {
-				_marker setMarkerSizeLocal [0.6,0.6];
-			} else {
-				_marker setMarkerSizeLocal [0.3,0.3];
-			};
-			_marker setMarkerTextLocal _text;
+			_markerText setMarkerTextLocal _text;
 		};
 		
 	} forEach playableUnits;
