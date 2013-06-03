@@ -6,12 +6,12 @@
 	
 	DOWNLOAD & PARTICIPATE:
 	https://github.com/aeroson/a3-misc/blob/master/player_markers.sqf
-	http://forums.bistudio.com/showthread.php?148577-GET-SET-Loadout-(saves-and-loads-pretty-much-everything)
+	http://forums.bistudio.com/showthread.php?156103-Dynamic-Player-Markers
 	
 	DESCRIPTION:
 	a script to mark players on map
 	all markers are created locally
-	designed to be small and fast
+	designed to be dynamic, small and fast
 	lets BTC mark unconscious players
 	shows Norrin's revive unconscious units
 	
@@ -120,7 +120,7 @@ while {true} do {
 				_marker setMarkerSizeLocal [0.9,0.9];
 			} else {
 				if(_injured) then {
-					_marker setMarkerTypeLocal "waypoint";
+					_marker setMarkerTypeLocal "mil_destroy";
 				} else {
 					if(leader group _x == _x) then {
 						_marker setMarkerTypeLocal "mil_arrow2";
@@ -128,7 +128,6 @@ while {true} do {
 						_marker setMarkerTypeLocal "mil_arrow";
 					};
 				};
-
 				_marker setMarkerSizeLocal [0.5,0.5];				
 			};
 			_markerText setMarkerTextLocal _text;
