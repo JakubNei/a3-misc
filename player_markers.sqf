@@ -2,7 +2,7 @@
 	
 	AUTHOR: aeroson
 	NAME: player_markers.sqf
-	VERSION: 1.7
+	VERSION: 1.8
 	
 	DOWNLOAD & PARTICIPATE:
 	https://github.com/aeroson/a3-misc/blob/master/player_markers.sqf
@@ -23,7 +23,10 @@
 
 if (isDedicated) exitWith {};  
                    
-private ["_marker","_markerText","_temp","_unitNumber","_show","_injured","_text","_index"];
+private ["_marker","_markerText","_temp","_vehicle","_unitNumber","_show","_injured","_text","_num"];
+
+aero_player_markers_pos = [0,0];
+onMapSingleClick "aero_player_markers_pos=_pos;";
 
 _getNextMarker = {
 	private ["_marker"]; 
@@ -74,8 +77,8 @@ while {true} do {
 		};
               	 
 		if(_show) then {
-						      	
-			_temp = getPosATL vehicle _x;			      		
+			_vehicle = vehicle _x;  			      	
+			_temp = getPosATL _vehicle;			      		
         	_marker = _temp call _getNextMarker;
 			_markerText = _temp call _getNextMarker;
 			
@@ -83,20 +86,20 @@ while {true} do {
 			_marker setMarkerColorLocal _temp;  
 			_markerText setMarkerColorLocal _temp;     
         	
-			_marker setMarkerDirLocal getDir vehicle _x;			 				
+			_marker setMarkerDirLocal getDir _vehicle;			 				
  			_markerText setMarkerTypeLocal "c_unknown";
 			_markerText setMarkerSizeLocal [0.8,0];
 			  
- 			_text = name _x; 
- 			if(vehicle _x != _x) then { 						    
-				if(vehicle _x isKindOf "car") then { 
+
+ 			if(_vehicle != _x && !(_vehicle isKindOf "ParachuteBase")) then { 						    
+				if(_vehicle isKindOf "car") then { 
 					_marker setMarkerTypeLocal "c_car";
 				} else {
-					if(vehicle _x isKindOf "ship") then {
+					if(_vehicle isKindOf "ship") then {
 						_marker setMarkerTypeLocal "c_ship";
 					} else {
-						if(vehicle _x isKindOf "air") then {
-							if(vehicle _x isKindOf "plane") then {						
+						if(_vehicle isKindOf "air") then {
+							if(_vehicle isKindOf "plane") then {						
 								_marker setMarkerTypeLocal "c_plane";
 							} else {
 								_marker setMarkerTypeLocal "c_air";
@@ -106,19 +109,32 @@ while {true} do {
 						};
 					};
 				};							
-				_text = format["[%1]", getText(configFile>>"CfgVehicles">>typeOf vehicle _x>>"DisplayName")]; 
-				if(!isNull driver vehicle _x) then {
-					_text = format["%1 %2", name driver vehicle _x, _text];	
-				};			 	
-				_index = 0;
-				{
-					if(alive _x && isPlayer _x && _x != driver vehicle _x) then {						
-						_text = format["%1%2 %3", _text, if(_index>0)then{","}else{""}, name _x];
-						_index = _index + 1;
-					};						
-				} forEach crew vehicle _x;
+				_text = format["[%1]", getText(configFile>>"CfgVehicles">>typeOf _vehicle>>"DisplayName")];
+				if(!isNull driver _vehicle) then {
+					_text = format["%1 %2", name driver _vehicle, _text];	
+				};	
+				
+				if((aero_player_markers_pos distance getPosATL _vehicle) < 50) then {
+					aero_player_markers_pos = getPosATL _vehicle;
+					_num = 0;
+					{
+						if(alive _x && isPlayer _x && _x != driver _vehicle) then {						
+							_text = format["%1%2 %3", _text, if(_num>0)then{","}else{""}, name _x];
+							_num = _num + 1;
+						};						
+					} forEach crew _vehicle; 
+				} else { 
+					_num = getNumber(configFile >> "cfgVehicles" >> typeof _vehicle >> "transportsoldier");
+					if(_num > 0) then {
+						_text = format["%1 %2/%3", _text, {alive _x} count crew _vehicle, _num];
+					} else {
+						_text = format["%1 %2", _text, {alive _x} count crew _vehicle];
+					};
+				};		 	
+				
 				_marker setMarkerSizeLocal [0.9,0.9];
 			} else {
+				_text = name _x;
 				if(_injured) then {
 					_marker setMarkerTypeLocal "mil_destroy";
 				} else {
@@ -136,8 +152,7 @@ while {true} do {
 	} forEach playableUnits;
 
 	_unitNumber = _unitNumber + 1;
-	_marker = format["um%1",_unitNumber];
-    
+	_marker = format["um%1",_unitNumber];    
 	while {(getMarkerType _marker) != ""} do {
 		deleteMarkerLocal _marker;
 		_unitNumber = _unitNumber + 1;
