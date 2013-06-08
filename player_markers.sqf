@@ -2,18 +2,20 @@
 	
 	AUTHOR: aeroson
 	NAME: player_markers.sqf
-	VERSION: 1.8
+	VERSION: 1.9
 	
 	DOWNLOAD & PARTICIPATE:
 	https://github.com/aeroson/a3-misc/blob/master/player_markers.sqf
 	http://forums.bistudio.com/showthread.php?156103-Dynamic-Player-Markers
 	
 	DESCRIPTION:
-	a script to mark players on map
-	all markers are created locally
-	designed to be dynamic, small and fast
-	lets BTC mark unconscious players
-	shows Norrin's revive unconscious units
+	A script to mark players on map.
+	All markers are created locally.
+	Designed to be dynamic, small and fast.
+	Shows driver/pilot, vehicle name and number of passengers
+	Click vehicle marker to unfold its passengers list
+	Lets BTC mark unconscious players.
+	Shows Norrin's revive unconscious units.
 	
 	USAGE:
 	in (client's) init do:
@@ -60,6 +62,9 @@ while {true} do {
 			if(!alive _x || damage _x > 0.9) then {
 				_injured = true;
 			};      
+			if(!isNil {_x getVariable "hide"}) then {
+				_show = false;
+			};  
 			if(!isNil {_x getVariable "BTC_need_revive"}) then {
 				if(typeName(_x getVariable "BTC_need_revive")=="SCALAR") then {
 					if((_x getVariable "BTC_need_revive") == 1) then {
@@ -124,11 +129,9 @@ while {true} do {
 						};						
 					} forEach crew _vehicle; 
 				} else { 
-					_num = getNumber(configFile >> "cfgVehicles" >> typeof _vehicle >> "transportsoldier");
-					if(_num > 0) then {
-						_text = format["%1 %2/%3", _text, {alive _x} count crew _vehicle, _num];
-					} else {
-						_text = format["%1 %2", _text, {alive _x} count crew _vehicle];
+					_num = {alive _x && isPlayer _x && _x != driver _vehicle} count crew _vehicle;
+					if (_num>0) then {
+						_text = format["%1 +%2", _text, _num];
 					};
 				};		 	
 				
