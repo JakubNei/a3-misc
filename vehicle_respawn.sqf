@@ -67,13 +67,10 @@ _data = [];
 				0 // 4 // when to respawn				 
 			]];
 			_vehicle setVariable ["s", getPosASL _vehicle, true]; // public spawn point, so we can show it to driver locally
-			systemchat str(_vehicle); 
 		};
 	};
 } forEach vehicles; 
 
-a=_vehicles;
-b=_data;
 
 
 while {true} do {
