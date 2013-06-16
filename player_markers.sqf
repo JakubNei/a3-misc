@@ -2,7 +2,7 @@
 	
 	AUTHOR: aeroson
 	NAME: player_markers.sqf
-	VERSION: 1.9
+	VERSION: 2.0
 	
 	DOWNLOAD & PARTICIPATE:
 	https://github.com/aeroson/a3-misc/blob/master/player_markers.sqf
@@ -96,22 +96,28 @@ while {true} do {
 			_markerText setMarkerSizeLocal [0.8,0];
 			  
 
- 			if(_vehicle != _x && !(_vehicle isKindOf "ParachuteBase")) then { 						    
-				if(_vehicle isKindOf "car") then { 
-					_marker setMarkerTypeLocal "c_car";
-				} else {
-					if(_vehicle isKindOf "ship") then {
+ 			if(_vehicle != _x && !(_vehicle isKindOf "ParachuteBase")) then {			 
+				switch true do {												  						    
+					case (_vehicle isKindOf "car"): { 
+						_marker setMarkerTypeLocal "c_car";
+					};
+					case (_vehicle isKindOf "ship"): {
 						_marker setMarkerTypeLocal "c_ship";
-					} else {
-						if(_vehicle isKindOf "air") then {
-							if(_vehicle isKindOf "plane") then {						
-								_marker setMarkerTypeLocal "c_plane";
-							} else {
-								_marker setMarkerTypeLocal "c_air";
-							};
-						} else {
-							_marker setMarkerTypeLocal "c_unknown";
-						};
+					};				 
+					case (_vehicle isKindOf "plane"): {
+						_marker setMarkerTypeLocal "c_plane";
+					}; 
+					case (_vehicle isKindOf "air"): {
+						_marker setMarkerTypeLocal "c_air";
+					};
+					case (_vehicle isKindOf "tank"): {
+						_marker setMarkerTypeLocal "n_armor";
+					};
+					case (_vehicle isKindOf "staticweapon"): {
+						_marker setMarkerTypeLocal "n_mortar";
+					};
+					default {
+						_marker setMarkerTypeLocal "n_unknown";
 					};
 				};							
 				_text = format["[%1]", getText(configFile>>"CfgVehicles">>typeOf _vehicle>>"DisplayName")];
