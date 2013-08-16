@@ -1,18 +1,18 @@
 /*
 	AUTHOR: aeroson	
-	NAME: group_management.sqf	
+	NAME: group_manager.sqf	
 	VERSION: 1
 	
 	DESCRIPTION:
-	Hold T and use scrollwheel to see squad management menu
+	Hold T and use scrollwheel to see squad manager menu
 	You can: invite others, request to join, or join squad based on squad options
-	leave squaf, kick members or take leadership if you have better score	
+	leave squaf, kick members or take leadership if you have better score
+	If taw view distance is present it will take over the mousewheel menu for it	
 	
 	USAGE:
 	in client's init:
-	execVM 'group_management.sqf';
-	
-		
+	execVM 'group_manager.sqf';
+			
 */
 
 if(isDedicated) exitWith {};
@@ -70,6 +70,7 @@ GVAR(msg) = {
 	systemChat _this;
 };
 
+
 GVAR(playersOnly) = {
 	private ["_out"];
 	_out = [];
@@ -113,6 +114,7 @@ GVAR(join) = {
 	] spawn BIS_fnc_MP;
 	format["You have joined squad led by %1", name leader _THIS0] call GVAR(msg);	
 	[player] joinSilent group _THIS0;
+	sleep 0.1;
 	call GVAR(menu_main); 	
 };
 
@@ -218,7 +220,7 @@ GVAR(request) = {
 // [unit1, group1] // unit1 requested to join yours group1
 GVAR(requested) = {
 	if(player in units _THIS1) then {
-		format["%1 has requested to join your squad (led by %2)", name _THIS0, name leader _THIS1] call GVAR(msg);
+		format["%1 has requested to join your squad", name _THIS0, name leader _THIS1] call GVAR(msg);
 		{
 			if((_x select 1)==_THIS0 && (_x select 2)==_THIS1) then {
 				GVAR(requests) set[_forEachIndex, 0];				
@@ -263,22 +265,36 @@ GVAR(request_declined) = {
 
 
 
-// you took leadership of your squad
+// you are taking leadership of your squad
 GVAR(takeLeaderShip) = {
 	DEBUGQ(GVAR(takeLeaderShip))
+	if(!([player] call GVAR(canTakeLeadership))) exitWith {
+		"You can't take leadership anymore" call GVAR(msg); 
+		call GVAR(menu_main);
+	};
 	"You took leadership" call GVAR(msg);	
 	[
 		format["%1 has taken leadership", name player],
 		QUOTE(GVAR(msg)),
-		[(units group player)-[player]] call GVAR(playersOnly)		
+		[(units group player)-[player, _THIS0]] call GVAR(playersOnly)		
 	] spawn BIS_fnc_MP;
 	[
-		[],		
-		QUOTE(GVAR(menu_main)),
-		[[leader player]] call GVAR(playersOnly)		
-	] spawn BIS_fnc_MP;	
-	(group player) selectLeader player;
+		[player],		
+		QUOTE(GVAR(takeLeaderShip_remote)),
+		leader player		
+	] spawn BIS_fnc_MP;
+	sleep 0.1;
 	call GVAR(menu_main);
+}; 
+
+// [unit1] // unit1 takes leadership of his+yours group
+GVAR(takeLeaderShip_remote) = {
+	if(group _THIS0 == group player) then {
+		if(isPlayer leader player) then {
+			format["%1 took leadership from you", name _THIS0] call GVAR(msg);
+		};
+		(group player) selectLeader _THIS0;
+	};
 };
 
 
@@ -299,6 +315,10 @@ GVAR(canTakeLeadership) = {
 // show menu to give leadership
 GVAR(menu_giveLeaderShip) = {
 	DEBUGQ(GVAR(menu_giveLeaderShip))
+	if(leader player!=player) exitWith {
+		"You are not leader anymore" call GVAR(msg); 
+		call GVAR(menu_main);
+	};
 	call GVAR(actions_remove);
 	{
 		ADD_START(GVAR(actions))
@@ -335,8 +355,11 @@ GVAR(giveLeaderShip) = {
 // show menu for squad options
 GVAR(menu_squadOptions) = {
 	DEBUGQ(GVAR(menu_squadOptions))
-	call GVAR(actions_remove);
-	
+	if(leader player!=player) exitWith {
+		"You are not leader anymore" call GVAR(msg); 
+		call GVAR(menu_main);
+	};
+	call GVAR(actions_remove);	
 	private ["_join","_accept"];
 	_join = [group player] call GVAR(options_getJoin);
 	{
@@ -354,7 +377,7 @@ GVAR(menu_squadOptions) = {
 	{
 		ADD_START(GVAR(actions))
 			player addAction [
-				format["<t color='#0088ee'>%1 %2</t>", _x, if(_accept==_forEachIndex) then {"(Current)"} else {""}],
+				format["<t color='#0077ee'>%1 %2</t>", _x, if(_accept==_forEachIndex) then {"(Current)"} else {""}],
 				{ _args=_THIS3; (_args select 0) setVariable ["a", (_args select 1), true]; call GVAR(menu_squadOptions); },
 				[group player, _forEachIndex],
 				1000-_forEachIndex
@@ -368,13 +391,17 @@ GVAR(menu_squadOptions) = {
 // show menu to kick squad member
 GVAR(menu_kickSquadMember) = {
 	DEBUGQ(GVAR(menu_kickSquadMember))
+	if(leader player!=player) exitWith {
+		"You are not leader anymore" call GVAR(msg); 
+		call GVAR(menu_main);
+	};
 	call GVAR(actions_remove);
 	{
 		ADD_START(GVAR(actions)) 
 			player addAction [
 				format["<t color='#ff8822'><img image='\A3\ui_f\data\gui\rsc\rscdisplayarcademap\top_close_gs.paa' size='0.7' /> Kick %1</t>", name _x],
 				{ _THIS3 call GVAR(kickSquadMember); },
-				[_x, player],
+				[_x],
 				1000-_forEachIndex
 			]	
 		ADD_END
@@ -382,21 +409,29 @@ GVAR(menu_kickSquadMember) = {
 	call GVAR(actions_addBack);
 }; 
 
-// [unit1, unit2] // unit1 was kicked by unit2
-GVAR(kickSquadMember)= {
-	DEBUGQ(GVAR(kickSquadMember))				
+// [unit1] // you are kicking unit1
+GVAR(kickSquadMember) = {
+	DEBUGQ(GVAR(kickSquadMember))
+	format["You have kicked %1", name _THIS0] call GVAR(msg); 				
 	[
-		format["%1 was kicked from your squad by %2", name _THIS0, name _THIS1],
+		format["%1 was kicked by %2", name _THIS0, name player],
 		QUOTE(GVAR(msg)),
-		[(units group _THIS1)-[_THIS0]] call GVAR(playersOnly)		
+		[(units group _THIS1)-[_THIS0, player]] call GVAR(playersOnly)		
 	] spawn BIS_fnc_MP;
 	[
-		format["You have been kicked from squad by %1",name _THIS1],
-		QUOTE(GVAR(msg)),
-		[[_THIS0]] call GVAR(playersOnly)		
+		[player, _THIS0],
+		QUOTE(GVAR(kickSquadMember_remote)),		
+		_THIS0		
 	] spawn BIS_fnc_MP;
-	[_THIS0] joinSilent createGroup (side _THIS0);
 	call GVAR(menu_main);
+};
+
+// [unit1, unit2] // unit2 (local) have been kicked by unit1
+GVAR(kickSquadMember_remote) = {
+	if(isPlayer _THIS1) then {	
+		format["You have been kicked by %1", name _THIS0] call GVAR(msg);
+	};		
+	[_THIS1] joinSilent createGroup (side _THIS1);
 };
 
 
@@ -422,10 +457,22 @@ GVAR(options_getAccept) = {
     _accept;
 };
 
-
+// main menu D:
 GVAR(menu_main) = {
 	call GVAR(actions_remove);
 	if(!GVAR(opened)) exitWith {};
+	
+	if(!isNil{tawvd_action} && !isNil{tawvd_foot}) then {
+		player removeAction tawvd_action;	  
+		ADD_START(GVAR(actions))  
+			player addAction[
+				"<t color='#FF0000'><img image='\A3\ui_f\data\gui\rsc\rscdisplayarcademap\icon_textures_ca.paa' size='0.7' /> View Distance Settings</t>",
+				"taw_vd\open.sqf",
+				[],-900,false,false,"",""
+			]	  
+		ADD_END
+	};	
+	
 	if(leader player == player) then {
 		if(count units group player > 1)then {
 			ADD_START(GVAR(actions))
@@ -546,7 +593,7 @@ GVAR(menu_main) = {
 				) then {
 			    	ADD_START(GVAR(actions))
 						player addAction [
-							format["<t color='#ffcc66'><img image='\A3\ui_f\data\gui\rsc\rscdisplayarcademap\icon_toolbox_units_ca.paa' size='0.7' />Invite %1 into your squad (led by %2)</t>", name _x, name leader _x],
+							format["<t color='#ffcc66'><img image='\A3\ui_f\data\gui\rsc\rscdisplayarcademap\icon_toolbox_units_ca.paa' size='0.7' /> Invite %1 into your squad</t>", name _x],
 							{ _THIS3 call GVAR(invite); },
 							[_x],
 							3000-_forEachIndex
@@ -560,7 +607,7 @@ GVAR(menu_main) = {
 		    if(_join==JOIN_FREE) then {
 		    	ADD_START(GVAR(actions))
 					player addAction [
-						format["<t color='#ffcc66'><img image='\A3\ui_f\data\gui\rsc\rscdisplayarcademap\icon_toolbox_units_ca.paa' size='0.7' />Join %1's squad (led by %2)</t>", name _x, name leader _x],
+						format["<t color='#ffcc66'><img image='\A3\ui_f\data\gui\rsc\rscdisplayarcademap\icon_toolbox_units_ca.paa' size='0.7' /> Join %1's squad (led by %2)</t>", name _x, name leader _x],
 						{ _THIS3 call GVAR(join); },
 						[_x],
 						3000-_forEachIndex 
@@ -574,7 +621,7 @@ GVAR(menu_main) = {
 				) then {
 				    ADD_START(GVAR(actions)) 
 						player addAction [
-							format["<t color='#ffcc66'><img image='\A3\ui_f\data\gui\rsc\rscdisplayarcademap\icon_toolbox_units_ca.paa' size='0.7' />Request to join %1's squad (led by %2)</t>", name _x, name leader _x],
+							format["<t color='#ffcc66'><img image='\A3\ui_f\data\gui\rsc\rscdisplayarcademap\icon_toolbox_units_ca.paa' size='0.7' /> Request to join %1's squad (led by %2)</t>", name _x, name leader _x],
 							{ _THIS3 call GVAR(request); },
 							[player, _x, _accept],
 							3000-_forEachIndex
@@ -584,12 +631,11 @@ GVAR(menu_main) = {
 		    };			    
 			    		    			 
   		};
-  	} forEach GVAR(possibleTargets);   
+  	} forEach GVAR(possibleTargets);
+	     
   	DEBUGQ(main_menu done)
 };
 
-
-GVAR(opened) = false;
 
 (findDisplay 46) displayAddEventHandler ["keyDown", QUOTE(_this call GVAR(keyDown))];
 GVAR(keyDown) = {	
