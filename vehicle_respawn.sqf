@@ -2,11 +2,15 @@
 
 	AUTHOR: aeroson
 	NAME: vehicle_respawn.sqf
-	VERSION: 1.2
+	VERSION: 1.4
 	
 	DESCRIPTION:
 	this scripts manages respawning of all vehicles in single thread as opposed to standart one thread one vehicle
 	i hope it will save some some cpu cycles, also it might be quite easier to set up	
+	
+	USAGE:
+	in server's init
+	execVM 'vehicle_respawn.sqf';
 	
 	CREDITS: 
 	it is variation of vehicle respawn by Tophe
@@ -14,9 +18,10 @@
 	
 */
 
+if (!isServer) exitWith {};     
 
 private ["_config","_vehicles","_data","_vehicle","_cfg","_cfgIndex","_thisOne","_respawnTime"];
-						
+				
 _config = [
 	[
 		["B_Quadbike_F"], // vehicle class(es)
@@ -76,9 +81,8 @@ _data = [];
 while {true} do {
 
 	sleep (2 + random 10);
-
 	for "_i" from 0 to count(_vehicles)-1 do {
-	
+
 		_vehicle = _vehicles select _i;
 		_currentData = _data select _i;
 		_currentConfig = _config select (_currentData select 0); 
@@ -87,7 +91,11 @@ while {true} do {
 		if (_respawnTime > 0 ) then {
 			if (_respawnTime < time) then {
 				_vehicle setVehicleLock "LOCKED";
-				_vehicle setDamage 1;                                 
+				if((((_currentData select 2) distance (getPosASL _vehicle))) > 100) then {
+					_vehicle setDamage 1;
+				} else {
+					deleteVehicle _vehicle;
+				};				                                 
 				_vehicle = (_currentData select 1) createVehicle (_currentData select 2);
 				_vehicle setPosASL (_currentData select 2);
 				_vehicle setDir (_currentData select 3); 
@@ -98,18 +106,32 @@ while {true} do {
 		};
 		
 		if (({alive _x} count crew _vehicle) <= 0) then {
-			if(((_currentData select 2) distance (getPosASL _vehicle)) < 10) then {
+			if((alive _vehicle) && ((_currentData select 2) distance (getPosASL _vehicle)) < 10) then {
 				_vehicle setDamage 0;
 				_vehicle setFuel 1;
 				_vehicle setVehicleAmmo 1;
+				_vehicle engineOn false;
 				_respawnTime = 0;
 			} else {		 
-				if (getDammage _vehicle > 0.9) then {
+				if ((!(alive _vehicle)) || (getDammage _vehicle > 0.9)) then {
 					if(_respawnTime == 0) then {
 						_respawnTime = time + (_currentConfig select 1); // destroyed
 					};
-				} else {									 
-					if (({alive _x} count (nearestObjects [getPos _vehicle, ["CAManBase"], 200])) <= 0) then {
+				} else {
+					_thisOne = true;
+					{								
+						scopeName "check";
+						{
+							if (alive _x) then { 
+								if (({alive _x} count (crew (vehicle _x)))>0) then {
+									_respawnTime = 0;
+									_thisOne = false;
+									breakOut "check";
+								}; 
+							};
+						} forEach ((getPos _vehicle) nearObjects [_x, 200]);
+					} forEach ["man","air","land","ship"];
+					if(_thisOne) then {
 						if ((getDammage _vehicle) > 0.7) then {
 							if(_respawnTime == 0) then {
 								_respawnTime = time + (_currentConfig select 1);  // destroyed + deserted
@@ -119,8 +141,6 @@ while {true} do {
 								_respawnTime = time + (_currentConfig select 2); // deserted
 							};
 						};
-					} else {
-						_respawnTime = 0;
 					};
 				};
 			};	
