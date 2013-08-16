@@ -108,14 +108,17 @@ GVAR(actions_addBack) = {
 
 // [unit1] // you have joined unit1's group 
 GVAR(join) = {
+	if(([group _THIS0] call GVAR(options_getJoin))!=JOIN_FREE) exitWith {
+		format["%1's group (led by %2) is no longer free to join", name _THIS0, name leader _THIS0] call GVAR(msg);
+	};
 	[
 		format["%1 has joined your squad", name player],
 		QUOTE(GVAR(msg)),
 		[(units group _THIS0)-[player]] call GVAR(playersOnly)		
 	] spawn BIS_fnc_MP;
-	format["You have joined squad led by %1", name leader _THIS0] call GVAR(msg);	
+	format["You have joined %1's squad led by %2", name _THIS0, name leader _THIS0] call GVAR(msg);	
 	[player] joinSilent group _THIS0;
-	sleep 0.1;
+	waitUntil{group player==group _THIS0};	
 	call GVAR(menu_main); 	
 };
 
@@ -135,6 +138,15 @@ GVAR(leaveGroup) = {
 
 // [unit1] // you have invited unit1 to join your group 
 GVAR(invite) = {
+	private ["_myJoin"];
+	_myJoin = [group player] call GVAR(options_getJoin);
+	if(!(
+		(_myJoin==JOIN_FREE) ||
+		(_myJoin==JOIN_INVITE_BY_SQUAD && player in units group player) ||
+		(_myJoin==JOIN_INVITE_BY_LEADER && leader player == player)
+	)) exitWith {
+		"You no longer haver permission to invite" call GVAR(msg);
+	};
 	format["You have invited %1 into your squad", name _THIS0] call GVAR(msg);
 	[
 		format["%1 has invited %2 into your squad", name player, name _THIS0],
@@ -204,6 +216,14 @@ GVAR(invite_declined) = {
  
 // [unit1, unit2, accept:int] // unit1 is requesting to join unit2's group, accept is either ACCEPT_BY_SQUAD or ACCEPT_BY_LEADER 
 GVAR(request) = {
+	private ["_accept"];
+	_accept = [group _THIS1] call GVAR(options_getAccept);	
+    if(!(
+		(_accept==ACCEPT_BY_SQUAD && ({isPlayer _x} count units group unit2>0)) ||
+		(_accept==ACCEPT_BY_LEADER && isPlayer leader group unit2) 
+	)) exitWith {
+		format["You are no longer able to request join to %1's group (led by %2)", name _THIS1, name leader _THIS1] call GVAR(msg);
+	};				
 	format["You have requested to join %1's squad (led by %2)", name _THIS1, name leader _THIS1] call GVAR(msg);
 	[
 		[
@@ -212,7 +232,7 @@ GVAR(request) = {
 		],
 		QUOTE(GVAR(requested)),
 		[
-			if(_THIS2==ACCEPT_BY_SQUAD) then { units group _THIS1 } else { [leader _THIS1] }
+			if(_accept==ACCEPT_BY_SQUAD) then { units group _THIS1 } else { [leader _THIS1] }
 		] call GVAR(playersOnly)
 	] spawn BIS_fnc_MP;
 	call GVAR(menu_main);		
@@ -279,13 +299,14 @@ GVAR(takeLeaderShip) = {
 		QUOTE(GVAR(msg)),
 		[(units group player)-[player, _THIS0]] call GVAR(playersOnly)		
 	] spawn BIS_fnc_MP;
+	_oldLeader = leader player;
 	[
 		[player],		
 		QUOTE(GVAR(takeLeaderShip_remote)),
 		leader player		
-	] spawn BIS_fnc_MP;
-	sleep 0.1;
-	call GVAR(menu_main);
+	] spawn BIS_fnc_MP;	
+	waitUntil{_oldLeader!=leader player};
+	call GVAR(menu_main);	 
 }; 
 
 // [unit1] // unit1 takes leadership of his+yours group
@@ -295,6 +316,7 @@ GVAR(takeLeaderShip_remote) = {
 			format["%1 took leadership from you", name _THIS0] call GVAR(msg);
 		};
 		(group player) selectLeader _THIS0;
+		call GVAR(menu_main);
 	};
 };
 
@@ -424,6 +446,7 @@ GVAR(kickSquadMember) = {
 		QUOTE(GVAR(kickSquadMember_remote)),		
 		_THIS0		
 	] spawn BIS_fnc_MP;
+	waitUntil{!(_THIS0 in units group player)};
 	call GVAR(menu_main);
 };
 
@@ -433,6 +456,7 @@ GVAR(kickSquadMember_remote) = {
 		format["You have been kicked by %1", name _THIS0] call GVAR(msg);
 	};		
 	[_THIS1] joinSilent createGroup (side _THIS1);
+	call GVAR(menu_main);
 };
 
 
