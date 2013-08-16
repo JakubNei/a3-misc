@@ -1,4 +1,5 @@
 /*
+
 	AUTHOR: aeroson	
 	NAME: group_manager.sqf	
 	VERSION: 1
