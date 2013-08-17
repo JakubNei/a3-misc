@@ -700,4 +700,4 @@ GVAR(keyUp) = {
 };
 
 
-"group management is active, hold T and use mousewheel to bring it up" call GVAR(msg);
+"group manager is active, hold T and use mousewheel to bring it up" call GVAR(msg);
