@@ -2,7 +2,7 @@
 
 	AUTHOR: aeroson	
 	NAME: group_manager.sqf	
-	VERSION: 1
+	VERSION: 1.1
 	
 	DESCRIPTION:
 	Hold T and use scrollwheel to see squad manager menu
@@ -17,6 +17,7 @@
 */
 
 if(isDedicated) exitWith {};
+waitUntil { !isNull(findDisplay 46); };
 
 #define KEY 0x14 // T // http://community.bistudio.com/wiki/DIK_KeyCodes
 #define TIMEOUT 120 // seconds
