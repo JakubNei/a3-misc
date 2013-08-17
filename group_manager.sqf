@@ -7,7 +7,7 @@
 	DESCRIPTION:
 	Hold T and use scrollwheel to see squad manager menu
 	You can: invite others, request to join, or join squad based on squad options
-	leave squaf, kick members or take leadership if you have better score
+	leave squad, kick members or take leadership if you have better score
 	If taw view distance is present it will take over the mousewheel menu for it	
 	
 	USAGE:
