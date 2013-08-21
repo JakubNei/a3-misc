@@ -2,7 +2,7 @@
 	
 	AUTHOR: aeroson
 	NAME: repetitive_cleanup.sqf
-	VERSION: 1.2
+	VERSION: 1.3
 	
 	DESCRIPTION:
 	can delete everything that is not really needed 
@@ -10,7 +10,14 @@
 	
 	USAGE:
 	in server's init
-	[60, 5*60, 2*60, 10*60, 0] execVM 'repetitive_cleanup.sqf';
+	[
+		60, // seconds to delete dead bodies (0 means don't delete) 
+		5*60, // seconds to delete dead vehicles (0 means don't delete)
+		2*60, // seconds to delete dropped weapons (0 means don't delete)
+		10*60, // seconds to deleted planted explosives (0 means don't delete)
+		0 // seconds to delete dropped smokes/chemlights (0 means don't delete)
+	] execVM 'repetitive_cleanup.sqf';
+	
 	will delete dead bodies after 60 seconds (1 minute)
 	will delete dead vehicles after 5*60 seconds (5 minutes)
 	will delete weapons after 2*60 seconds (2 minutes)
