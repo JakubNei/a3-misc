@@ -2,7 +2,7 @@
 	
 	AUTHOR: aeroson
 	NAME: player_markers.sqf
-	VERSION: 2.0
+	VERSION: 2.1
 	
 	DOWNLOAD & PARTICIPATE:
 	https://github.com/aeroson/a3-misc/blob/master/player_markers.sqf
@@ -119,7 +119,7 @@ while {true} do {
 					default {
 						_marker setMarkerTypeLocal "n_unknown";
 					};
-				};							
+				};						
 				_text = format["[%1]", getText(configFile>>"CfgVehicles">>typeOf _vehicle>>"DisplayName")];
 				if(!isNull driver _vehicle) then {
 					_text = format["%1 %2", name driver _vehicle, _text];	
@@ -136,8 +136,14 @@ while {true} do {
 					} forEach crew _vehicle; 
 				} else { 
 					_num = {alive _x && isPlayer _x && _x != driver _vehicle} count crew _vehicle;
-					if (_num>0) then {
-						_text = format["%1 +%2", _text, _num];
+					if (_num>0) then {					
+						if (isNull driver _vehicle) then {
+							_text = format["%1 %2", _text, name (crew _vehicle select 0)];
+							_num = _num - 1;
+						};
+						if (_num>0) then {
+							_text = format["%1 +%2", _text, _num];
+						};
 					};
 				};		 	
 				
