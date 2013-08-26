@@ -2,18 +2,22 @@
 
 	AUTHOR: aeroson
 	NAME: vehicle_respawn.sqf
-	VERSION: 1.9
+	VERSION: 2.0
+	
+	DOWNLOAD & PARTICIPATE: 
+	https://github.com/aeroson/a3-misc
 	
 	DESCRIPTION:
-	this scripts manages respawning of all vehicles in single thread as opposed to standart one thread one vehicle
-	i hope it will save some some cpu cycles, also it might be quite easier to set up
-	at startup it goes thru config from start to end
-	if it finds class matching vehicle it uses it and repeats it for next vehicle
-	so all you have to do is just put vehicle into your mission and it will automatically respawn
-	it is uav compatible, creates uav crew if it respawns a vehicle with config value isuav=1	
+	This scripts manages respawning of all vehicles in single thread as opposed to standart one thread one vehicle.
+	I hope it will save some some cpu cycles, also it might be quite easier to set up.
+	At startup it goes thru config from start to end, if it finds class matching vehicle it uses it and repeats process for next vehicle.
+	So all you have to do is just put vehicle into your mission and it will automatically respawn.
+	It is uav compatible, it creates uav crew if it respawns a vehicle with cfg value isUav=1		
+	You can use: (vehicle player) call aero_vehicle_respawn_add;
+	To add your current vehicle into respawn pool	
 	
 	USAGE:
-	in server's init:
+	in (server's) init:  	
 	[
 		[
 			["B_Quadbike_F"], // vehicle class(es)
@@ -34,8 +38,8 @@
 			{} // call back where _this is the newly created vehicle
 		]
 	] execVM 'vehicle_respawn.sqf';
-	You can use (vehicle player) call aero_vehicle_respawn_add;
-	to add your current vehicle into respawn routine
+
+	
 	
 	CREDITS: 
 	it is variation of vehicle respawn by Tophe
@@ -43,7 +47,7 @@
 	
 */
 
-if (!isServer) exitWith {};     
+if (!isServer) exitWith {}; // isn't server     
 
 #define PREFIX aero
 #define COMPONENT vehicle_respawn
