@@ -2,7 +2,7 @@
 	
 	AUTHOR: aeroson
 	NAME: repetitive_cleanup.sqf
-	VERSION: 1.5
+	VERSION: 1.6
 	
 	DESCRIPTION:
 	can delete everything that is not really needed 
@@ -127,8 +127,8 @@ while{true} do {
 			GVAR(objects) set[_forEachIndex, 0];
 			GVAR(times) set[_forEachIndex, 0];
 		} else {
-			if(_x < GVAR(times) select _forEachIndex ) then {
-				deleteVehicle _object;
+			if(GVAR(times) select _forEachIndex < time) then {
+				deleteVehicle _x;
 				GVAR(objects) set[_forEachIndex, 0];
 				GVAR(times) set[_forEachIndex, 0];			 	
 			};
