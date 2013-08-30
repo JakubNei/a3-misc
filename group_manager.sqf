@@ -9,11 +9,12 @@
 	
 	DESCRIPTION:
 	Hold T and use scrollwheel to see squad manager menu
-	You can: invite others, request to join, or join squad based on squad options
-	leave squad, kick members or take leadership if you have better score	
+	You can invite others, request to join, or join squad based on squad options
+	Also leave squad, kick members or take leadership if you have better score	than current squad leader
+	Potential targets is either cursorTrager and/or everyone within 5m range	
 	
 	USAGE:
-	in (client's) init:
+	in client's init:
 	execVM 'group_manager.sqf';
 			
 */
@@ -742,4 +743,4 @@ GVAR(keyUp) = {
 };
 
 
-"group manager is active, hold T and use mousewheel to bring it up" call GVAR(msg);
+"squad manager is active, hold T and use mousewheel to bring it up" call GVAR(msg);
