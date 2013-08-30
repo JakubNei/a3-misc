@@ -25,14 +25,14 @@ waitUntil{!isNull findDisplay 46};
 
 // SETTINGS
 #define KEY 0x14 // T // http://community.bistudio.com/wiki/DIK_KeyCodes
-#define TIMEOUT 120 // seconds            
+#define TIMEOUT 120 // seconds			
 
 // SQUAD JOIN
 #define JOIN_FREE 0 // squad is open, anyone can join
 #define JOIN_INVITE_BY_SQUAD 1 // squad is invite only, everyone from squad can invite
 #define JOIN_INVITE_BY_LEADER 2 // squad is invite only, only leader can invite
 #define JOIN_DISABLED 3 // none can invite
-#define JOIN_DEFAULT JOIN_FREE         
+#define JOIN_DEFAULT JOIN_FREE		 
 
 // SQUAD ACCEPT JOINT REQUEST PERMISSION (WHO CAN ACCEPT REQUEST) ONLY IF SQUAD JOIN IS 1, 2 OR 3
 #define ACCEPT_BY_SQUAD 0 // everyone from squad can accept join requests
@@ -41,7 +41,7 @@ waitUntil{!isNull findDisplay 46};
 #define ACCEPT_DEFAULT ACCEPT_BY_LEADER 
 
 
-              
+			  
 
 #define PREFIX aero
 #define COMPONENT gm
@@ -203,7 +203,7 @@ GVAR(invited) = {
 		{
 			if((_x select 1)==_THIS(0) && (_x select 2)==_THIS(1)) then {
 				GVAR(invites) set[_forEachIndex, 0];				
-			};                         
+			};						 
 		} forEach GVAR(invites);
 		
 		PUSH_START(GVAR(invites))
@@ -250,7 +250,7 @@ GVAR(invite_declined) = {
 GVAR(request) = {
 	private ["_accept"];
 	_accept = [group _THIS(1)] call GVAR(options_getAccept);	
-    if(!(
+	if(!(
 		(_accept==ACCEPT_BY_SQUAD && ({isPlayer _x} count units group unit2>0)) ||
 		(_accept==ACCEPT_BY_LEADER && isPlayer leader group unit2) 
 	)) exitWith {
@@ -277,7 +277,7 @@ GVAR(requested) = {
 		{
 			if((_x select 1)==_THIS(0) && (_x select 2)==_THIS(1)) then {
 				GVAR(requests) set[_forEachIndex, 0];				
-			};                         
+			};						 
 		} forEach GVAR(requests);
 		PUSH_START(GVAR(requests))
 			[time, _THIS(0), _THIS(1)]
@@ -506,22 +506,22 @@ GVAR(kickSquadMember_remote) = {
 GVAR(options_getJoin) = {
 	private ["_join"];
 	_join = _THIS(0) getVariable "j";
-    if(isNil{_join}) then {
-    	_join = JOIN_DEFAULT;
-    	_THIS(0) setVariable ["j", _join, true];
-    };
-    _join;
+	if(isNil{_join}) then {
+		_join = JOIN_DEFAULT;
+		_THIS(0) setVariable ["j", _join, true];
+	};
+	_join;
 };
 
 // [group1] // returns ACCEPT_ option for group1
 GVAR(options_getAccept) = {
 	private ["_accept"];
 	_accept = _THIS(0) getVariable "a";
-    if(isNil{_accept}) then {
-    	_accept = ACCEPT_DEFAULT;
-    	_THIS(0) setVariable ["a", _accept, true];
-    };
-    _accept;
+	if(isNil{_accept}) then {
+		_accept = ACCEPT_DEFAULT;
+		_THIS(0) setVariable ["a", _accept, true];
+	};
+	_accept;
 };
 
 // main menu D:
@@ -616,8 +616,8 @@ GVAR(menu_main) = {
 	// GVAR(requests) = [[time, unit1, group1], ] // unit1 requested to join yours group1
 	GVAR(requests) = GVAR(requests) - [0];
 	{
-      	_unit1 = _x select 1;
-      	if(player in units (_x select 2) && (_x select 0) + TIMEOUT > time) then {						
+	  	_unit1 = _x select 1;
+	  	if(player in units (_x select 2) && (_x select 0) + TIMEOUT > time) then {						
 			PUSH_START(GVAR(actions))
 				player addAction [
 					format["<t color='#00cc00'><img image='\A3\ui_f\data\gui\rsc\rscdisplayarcademap\icon_continue_ca.paa' size='0.7' /> Accept join request by %1</t>", name _unit1],
@@ -643,7 +643,7 @@ GVAR(menu_main) = {
 
 	private "_groupsDone";	
 	_groupsDone = [];
-	_myJoin = [group player] call GVAR(options_getJoin);  	    	
+	_myJoin = [group player] call GVAR(options_getJoin);  			
   	{
   		//if(side _x == side player && group _x != group player) then {
   		if(
@@ -651,13 +651,13 @@ GVAR(menu_main) = {
 		  !(vehicle _x in allUnitsUav) 		  
 		) then {
 
-		    if(_myJoin!=JOIN_DISABLED && isPlayer _x) then {
+			if(_myJoin!=JOIN_DISABLED && isPlayer _x) then {
 				if(
 					(_myJoin==JOIN_FREE) ||
 					(_myJoin==JOIN_INVITE_BY_SQUAD && player in units group player) ||
 					(_myJoin==JOIN_INVITE_BY_LEADER && leader player == player)
 				) then {
-			    	PUSH_START(GVAR(actions))
+					PUSH_START(GVAR(actions))
 						player addAction [
 							format["<t color='#ffcc66'><img image='\A3\ui_f\data\gui\rsc\rscdisplayarcademap\icon_toolbox_units_ca.paa' size='0.7' /> Invite %1 into your squad</t>", name _x],
 							{ _THIS(3) call GVAR(invite); },
@@ -666,14 +666,14 @@ GVAR(menu_main) = {
 						]
 					PUSH_END
 				};
-		    }; 
-		    
+			}; 
+			
 			if(!(group _x in _groupsDone)) then {
-				PUSH(_groupsDone, group _x);		    						    			    
-			    _join = [group _x] call GVAR(options_getJoin);
-					    			    				
-			    if(_join==JOIN_FREE) then {
-			    	PUSH_START(GVAR(actions))
+				PUSH(_groupsDone, group _x);														
+				_join = [group _x] call GVAR(options_getJoin);
+														
+				if(_join==JOIN_FREE) then {
+					PUSH_START(GVAR(actions))
 						player addAction [
 							format["<t color='#ffcc66'><img image='\A3\ui_f\data\gui\rsc\rscdisplayarcademap\icon_toolbox_units_ca.paa' size='0.7' /> Join %1's squad (led by %2)</t>", name _x, name leader _x],
 							{ _THIS(3) call GVAR(join); },
@@ -681,13 +681,13 @@ GVAR(menu_main) = {
 							5300-_forEachIndex 
 						]
 					PUSH_END				
-			    } else {	    
+				} else {		
 					_accept = [group _x] call GVAR(options_getAccept);
-				    if(
+					if(
 						(_accept==ACCEPT_BY_SQUAD && ({isPlayer _x} count units group _x>0)) ||
 						(_accept==ACCEPT_BY_LEADER && isPlayer leader group _x) 
 					) then {
-					    PUSH_START(GVAR(actions)) 
+						PUSH_START(GVAR(actions)) 
 							player addAction [
 								format["<t color='#ffcc66'><img image='\A3\ui_f\data\gui\rsc\rscdisplayarcademap\icon_toolbox_units_ca.paa' size='0.7' /> Request to join %1's squad (led by %2)</t>", name _x, name leader _x],
 								{ _THIS(3) call GVAR(request); },
@@ -695,13 +695,13 @@ GVAR(menu_main) = {
 								5000-_forEachIndex
 							]
 						PUSH_END
-				    };			    
-			    };
-			};			    
-			    		    			 
+					};				
+				};
+			};				
+										 
   		};
   	} forEach GVAR(possibleTargets);
-	     
+		 
   	LOG(QUOTE(main_menu done))
 };
 
