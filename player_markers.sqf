@@ -2,10 +2,10 @@
 	
 	AUTHOR: aeroson
 	NAME: player_markers.sqf
-	VERSION: 2.1
+	VERSION: 2.4
 	
 	DOWNLOAD & PARTICIPATE:
-	https://github.com/aeroson/a3-misc/blob/master/player_markers.sqf
+	https://github.com/aeroson/a3-misc
 	http://forums.bistudio.com/showthread.php?156103-Dynamic-Player-Markers
 	
 	DESCRIPTION:
@@ -16,30 +16,37 @@
 	Click vehicle marker to unfold its passengers list
 	Lets BTC mark unconscious players.
 	Shows Norrin's revive unconscious units.
+	Shows who is in control of UAV unit.
 	
 	USAGE:
 	in (client's) init do:
 	execvm "player_markers.sqf"; 
 
 */
-
-if (isDedicated) exitWith {};  
                    
-private ["_marker","_markerText","_temp","_vehicle","_unitNumber","_show","_injured","_text","_num"];
+if (isDedicated) exitWith {};  
+if (!isNil{aero_player_markers_pos}) exitWith {};
+                   
+private ["_marker","_markerText","_temp","_vehicle","_markerNumber","_show","_injured","_text","_num","_getNextMarker","_getMarkerColor"];
 
 aero_player_markers_pos = [0,0];
 onMapSingleClick "aero_player_markers_pos=_pos;";
 
 _getNextMarker = {
 	private ["_marker"]; 
-	_unitNumber = _unitNumber + 1;
-	_marker = format["um%1",_unitNumber];    
+	_markerNumber = _markerNumber + 1;
+	_marker = format["um%1",_markerNumber];    
 	if(getMarkerType _marker == "") then {
 		createMarkerLocal [_marker, _this];
 	} else {
 		_marker setMarkerPosLocal _this;
 	};
 	_marker;
+};
+
+_getMarkerColor = {	
+	[(((side _this) call bis_fnc_sideID) call bis_fnc_sideType),true] call bis_fnc_sidecolor;
+	//["ColorUnknown","ColorOPFOR","ColorBLUFOR","ColorIndependent","ColorCivilian"] select 1+([east,west,independent,civilian] find side _this);
 };
 
 while {true} do {
@@ -49,7 +56,9 @@ while {true} do {
 		true;
 	};
 	
-	_unitNumber = 0; 
+	_markerNumber = 0; 
+	
+	// show players or player's vehicles
 	{
 		_show = false;
 		_injured = false;
@@ -68,6 +77,7 @@ while {true} do {
 			if(!isNil {_x getVariable "BTC_need_revive"}) then {
 				if(typeName(_x getVariable "BTC_need_revive")=="SCALAR") then {
 					if((_x getVariable "BTC_need_revive") == 1) then {
+						_injured = true;
 						_show = false;
 					};    
 				};
@@ -83,47 +93,30 @@ while {true} do {
               	 
 		if(_show) then {
 			_vehicle = vehicle _x;  			      	
-			_temp = getPosATL _vehicle;			      		
-        	_marker = _temp call _getNextMarker;
-			_markerText = _temp call _getNextMarker;
-			
-			_temp = ["ColorUnknown","ColorOPFOR","ColorBLUFOR","ColorIndependent","ColorCivilian"] select 1+([east,west,independent,civilian] find side _x);
-			_marker setMarkerColorLocal _temp;  
-			_markerText setMarkerColorLocal _temp;     
-        	
-			_marker setMarkerDirLocal getDir _vehicle;			 				
- 			_markerText setMarkerTypeLocal "c_unknown";
-			_markerText setMarkerSizeLocal [0.8,0];
-			  
+			_pos = getPosATL _vehicle;	      		        	
+			_color = _x call _getMarkerColor;  
 
- 			if(_vehicle != _x && !(_vehicle isKindOf "ParachuteBase")) then {			 
-				switch true do {												  						    
-					case (_vehicle isKindOf "car"): { 
-						_marker setMarkerTypeLocal "c_car";
-					};
-					case (_vehicle isKindOf "ship"): {
-						_marker setMarkerTypeLocal "c_ship";
-					};				 
-					case (_vehicle isKindOf "plane"): {
-						_marker setMarkerTypeLocal "c_plane";
-					}; 
-					case (_vehicle isKindOf "air"): {
-						_marker setMarkerTypeLocal "c_air";
-					};
-					case (_vehicle isKindOf "tank"): {
-						_marker setMarkerTypeLocal "n_armor";
-					};
-					case (_vehicle isKindOf "staticweapon"): {
-						_marker setMarkerTypeLocal "n_mortar";
-					};
-					default {
-						_marker setMarkerTypeLocal "n_unknown";
-					};
-				};						
+			_markerText = _pos call _getNextMarker;						
+			_markerText setMarkerColorLocal _color;     						 				
+ 			_markerText setMarkerTypeLocal "c_unknown";		  			   
+            _markerText setMarkerSizeLocal [0.8,0];
+
+			_marker = _pos call _getNextMarker;            
+        	_marker setMarkerColorLocal _color;
+            _marker setMarkerDirLocal getDir _vehicle;
+			_marker setMarkerTypeLocal "mil_triangle";
+			_marker setMarkerTextLocal "";			
+			if(_vehicle == vehicle player) then {
+				_marker setMarkerSizeLocal [0.8,1];
+			} else {
+				_marker setMarkerSizeLocal [0.5,0.7];
+			};
+            
+ 			if(_vehicle != _x && !(_vehicle isKindOf "ParachuteBase")) then {			 						
 				_text = format["[%1]", getText(configFile>>"CfgVehicles">>typeOf _vehicle>>"DisplayName")];
 				if(!isNull driver _vehicle) then {
 					_text = format["%1 %2", name driver _vehicle, _text];	
-				};	
+				};				        	 						
 				
 				if((aero_player_markers_pos distance getPosATL _vehicle) < 50) then {
 					aero_player_markers_pos = getPosATL _vehicle;
@@ -145,33 +138,53 @@ while {true} do {
 							_text = format["%1 +%2", _text, _num];
 						};
 					};
-				};		 	
-				
-				_marker setMarkerSizeLocal [0.9,0.9];
+				};	 					
 			} else {
-				_text = name _x;
-				if(_injured) then {
-					_marker setMarkerTypeLocal "mil_destroy";
-				} else {
-					if(leader group _x == _x) then {
-						_marker setMarkerTypeLocal "mil_arrow2";
-					} else {				
-						_marker setMarkerTypeLocal "mil_arrow";
-					};
-				};
-				_marker setMarkerSizeLocal [0.5,0.5];				
+				_text = name _x;			
 			};
 			_markerText setMarkerTextLocal _text;
 		};
 		
 	} forEach playableUnits;
 
-	_unitNumber = _unitNumber + 1;
-	_marker = format["um%1",_unitNumber];    
+
+	// show player controlled uavs
+    {
+		if(isUavConnected _x) then {	
+			_operator=(uavControl _x) select 0;
+			if(isPlayer _operator && side _operator == playerSide) then {
+				_color = _x call _getMarkerColor;							      			        					  			    
+				_pos = getPosATL _x;
+				
+				_marker = _pos call _getNextMarker;            
+	        	_marker setMarkerColorLocal _color;
+	            _marker setMarkerDirLocal getDir _x;
+				_marker setMarkerTypeLocal "mil_triangle";			
+				_marker setMarkerTextLocal "";
+				if(_operator == player) then {
+					_marker setMarkerSizeLocal [0.8,1];
+				} else {
+					_marker setMarkerSizeLocal [0.5,0.7];
+				};
+								      		
+	        	_markerText = _pos call _getNextMarker;	
+				_markerText setMarkerColorLocal _color;       
+	        	_markerText setMarkerTypeLocal "c_unknown";
+				_markerText setMarkerSizeLocal [0.8,0];
+				_markerText setMarkerTextLocal format["%1", name _operator];				  
+			};
+		};
+	} forEach allUnitsUav; 
+	
+	
+	
+
+	_markerNumber = _markerNumber + 1;
+	_marker = format["um%1",_markerNumber];    
 	while {(getMarkerType _marker) != ""} do {
 		deleteMarkerLocal _marker;
-		_unitNumber = _unitNumber + 1;
-		_marker = format["um%1",_unitNumber];
+		_markerNumber = _markerNumber + 1;
+		_marker = format["um%1",_markerNumber];
 	};
      
 };
