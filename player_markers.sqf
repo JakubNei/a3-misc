@@ -23,10 +23,10 @@
 	execvm "player_markers.sqf"; 
 
 */
-                   
+				   
 if (isDedicated) exitWith {};  
 if (!isNil{aero_player_markers_pos}) exitWith {};
-                   
+				   
 private ["_marker","_markerText","_temp","_vehicle","_markerNumber","_show","_injured","_text","_num","_getNextMarker","_getMarkerColor"];
 
 aero_player_markers_pos = [0,0];
@@ -35,7 +35,7 @@ onMapSingleClick "aero_player_markers_pos=_pos;";
 _getNextMarker = {
 	private ["_marker"]; 
 	_markerNumber = _markerNumber + 1;
-	_marker = format["um%1",_markerNumber];    
+	_marker = format["um%1",_markerNumber];	
 	if(getMarkerType _marker == "") then {
 		createMarkerLocal [_marker, _this];
 	} else {
@@ -46,7 +46,6 @@ _getNextMarker = {
 
 _getMarkerColor = {	
 	[(((side _this) call bis_fnc_sideID) call bis_fnc_sideType),true] call bis_fnc_sidecolor;
-	//["ColorUnknown","ColorOPFOR","ColorBLUFOR","ColorIndependent","ColorCivilian"] select 1+([east,west,independent,civilian] find side _this);
 };
 
 while {true} do {
@@ -67,10 +66,10 @@ while {true} do {
 		if(side _x == playerSide) then {		
 			if((crew vehicle _x) select 0 == _x) then {
 				_show = true;
-			};	    
+			};		
 			if(!alive _x || damage _x > 0.9) then {
 				_injured = true;
-			};      
+			};	  
 			if(!isNil {_x getVariable "hide"}) then {
 				_show = false;
 			};  
@@ -79,31 +78,31 @@ while {true} do {
 					if((_x getVariable "BTC_need_revive") == 1) then {
 						_injured = true;
 						_show = false;
-					};    
+					};	
 				};
-			};      
+			};	  
 			if(!isNil {_x getVariable "NORRN_unconscious"}) then {
 				if(typeName(_x getVariable "NORRN_unconscious")=="BOOL") then {
 					if(_x getVariable "NORRN_unconscious" == true) then {
 						_injured = true;
 					};
 				};
-			};      
+			};	  
 		};
-              	 
+			  	 
 		if(_show) then {
-			_vehicle = vehicle _x;  			      	
-			_pos = getPosATL _vehicle;	      		        	
+			_vehicle = vehicle _x;  				  	
+			_pos = getPosATL _vehicle;		  					
 			_color = _x call _getMarkerColor;  
 
 			_markerText = _pos call _getNextMarker;						
-			_markerText setMarkerColorLocal _color;     						 				
+			_markerText setMarkerColorLocal _color;	 						 				
  			_markerText setMarkerTypeLocal "c_unknown";		  			   
-            _markerText setMarkerSizeLocal [0.8,0];
+			_markerText setMarkerSizeLocal [0.8,0];
 
-			_marker = _pos call _getNextMarker;            
-        	_marker setMarkerColorLocal _color;
-            _marker setMarkerDirLocal getDir _vehicle;
+			_marker = _pos call _getNextMarker;			
+			_marker setMarkerColorLocal _color;
+			_marker setMarkerDirLocal getDir _vehicle;
 			_marker setMarkerTypeLocal "mil_triangle";
 			_marker setMarkerTextLocal "";			
 			if(_vehicle == vehicle player) then {
@@ -111,12 +110,12 @@ while {true} do {
 			} else {
 				_marker setMarkerSizeLocal [0.5,0.7];
 			};
-            
+			
  			if(_vehicle != _x && !(_vehicle isKindOf "ParachuteBase")) then {			 						
 				_text = format["[%1]", getText(configFile>>"CfgVehicles">>typeOf _vehicle>>"DisplayName")];
 				if(!isNull driver _vehicle) then {
 					_text = format["%1 %2", name driver _vehicle, _text];	
-				};				        	 						
+				};							 						
 				
 				if((aero_player_markers_pos distance getPosATL _vehicle) < 50) then {
 					aero_player_markers_pos = getPosATL _vehicle;
@@ -149,16 +148,16 @@ while {true} do {
 
 
 	// show player controlled uavs
-    {
+	{
 		if(isUavConnected _x) then {	
 			_operator=(uavControl _x) select 0;
 			if(isPlayer _operator && side _operator == playerSide) then {
-				_color = _x call _getMarkerColor;							      			        					  			    
+				_color = _x call _getMarkerColor;								  										  				
 				_pos = getPosATL _x;
 				
-				_marker = _pos call _getNextMarker;            
-	        	_marker setMarkerColorLocal _color;
-	            _marker setMarkerDirLocal getDir _x;
+				_marker = _pos call _getNextMarker;			
+				_marker setMarkerColorLocal _color;
+				_marker setMarkerDirLocal getDir _x;
 				_marker setMarkerTypeLocal "mil_triangle";			
 				_marker setMarkerTextLocal "";
 				if(_operator == player) then {
@@ -166,10 +165,10 @@ while {true} do {
 				} else {
 					_marker setMarkerSizeLocal [0.5,0.7];
 				};
-								      		
-	        	_markerText = _pos call _getNextMarker;	
-				_markerText setMarkerColorLocal _color;       
-	        	_markerText setMarkerTypeLocal "c_unknown";
+									  		
+				_markerText = _pos call _getNextMarker;	
+				_markerText setMarkerColorLocal _color;	   
+				_markerText setMarkerTypeLocal "c_unknown";
 				_markerText setMarkerSizeLocal [0.8,0];
 				_markerText setMarkerTextLocal format["%1", name _operator];				  
 			};
@@ -180,11 +179,11 @@ while {true} do {
 	
 
 	_markerNumber = _markerNumber + 1;
-	_marker = format["um%1",_markerNumber];    
+	_marker = format["um%1",_markerNumber];	
 	while {(getMarkerType _marker) != ""} do {
 		deleteMarkerLocal _marker;
 		_markerNumber = _markerNumber + 1;
 		_marker = format["um%1",_markerNumber];
 	};
-     
+	 
 };
