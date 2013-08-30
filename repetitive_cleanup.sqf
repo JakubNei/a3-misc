@@ -5,8 +5,9 @@
 	VERSION: 1.6
 	
 	DESCRIPTION:
-	can delete everything that is not really needed 
+	Can delete everything that is not really needed 
 	dead bodies, dropped items, smokes, chemlights, explosives, empty groups
+	Works even on Altis, it eats only items which are 100m from all units
 	
 	USAGE:
 	in server's init
@@ -26,7 +27,7 @@
 		
 */
 
-if (!isServer) exitWith {};         
+if (!isServer) exitWith {}; // isn't server         
 
 #define PREFIX aero
 #define COMPONENT repetitive_cleanup
