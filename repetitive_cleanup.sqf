@@ -2,7 +2,7 @@
 	
 	AUTHOR: aeroson
 	NAME: repetitive_cleanup.sqf
-	VERSION: 1.6
+	VERSION: 1.7
 	
 	DESCRIPTION:
 	Can delete everything that is not really needed 
@@ -29,39 +29,30 @@
 
 if (!isServer) exitWith {}; // isn't server         
 
-#define PREFIX aero
-#define COMPONENT repetitive_cleanup
-
-#define TRIPLES(A,B,C) ##A##_##B##_##C
-#define GVAR(A) TRIPLES(PREFIX,COMPONENT,A)
-#define QGVAR(A) QUOTE(GVAR(A))
 #define PUSH(A,B) A set [count (A),B];
 #define REM(A,B) A=A-[B];
-#define PARAM_START private ["_PARAM_INDEX"]; _PARAM_INDEX=0;
-#define PARAM_REQ(A) if (count _this <= _PARAM_INDEX) exitWith { systemChat format["required param '%1' not supplied in file:'%2' at line:%3", #A ,__FILE__,__LINE__]; }; A = _this select _PARAM_INDEX; _PARAM_INDEX=_PARAM_INDEX+1;
-#define PARAM(A,B) A = B; if (count _this > _PARAM_INDEX) then { A = _this select _PARAM_INDEX; }; _PARAM_INDEX=_PARAM_INDEX+1;
 
-private ["_ttwBodies","_ttwVehicles","_ttwWeapons","_ttwPlanted","_ttwSmokes","_delete","_unit"];
-
-PARAM_START
-PARAM(_ttwBodies,0)
-PARAM(_ttwVehicles,0)
-PARAM(_ttwWeapons,0)
-PARAM(_ttwPlanted,0)
-PARAM(_ttwSmokes,0)
-
-if (_ttwWeapons<=0 && _ttwPlanted<=0 && _ttwSmokes<=0 && _ttwBodies<=0 && _ttwVehicles<=0) exitWith {};
+private ["_ttdBodies","_ttdVehicles","_ttdWeapons","_ttdPlanted","_ttdSmokes","_delete","_unit"];
 
 
-GVAR(objects)=[];
-GVAR(times)=[];
+_ttdBodies=[_this,0,0,[0]] call BIS_fnc_param;
+_ttdVehicles=[_this,1,0,[0]] call BIS_fnc_param;
+_ttdWeapons=[_this,2,0,[0]] call BIS_fnc_param;
+_ttdPlanted=[_this,3,0,[0]] call BIS_fnc_param;
+_ttdSmokes=[_this,4,0,[0]] call BIS_fnc_param;
+
+if (_ttdWeapons<=0 && _ttdPlanted<=0 && _ttdSmokes<=0 && _ttdBodies<=0 && _ttdVehicles<=0) exitWith {};
+
+
+_objects=[];
+_items=[];
 
 _delete = {
 	_object = _this select 0;
 	_time = _this select 1;
-	if(GVAR(objects) find _object == -1) then {
-		PUSH(GVAR(objects),_object)
-		PUSH(GVAR(times),_time+time)
+	if(_objects find _object == -1) then {
+		PUSH(_objects,_object)
+		PUSH(_items,_time+time)
 	};    
 };
 
@@ -70,18 +61,18 @@ while{true} do {
 
 	sleep 10;
     	
-	if (_ttwBodies>0) then {
+	if (_ttdBodies>0) then {
 		{
 			if(!isPlayer _x) then { 	 
-				[_x, _ttwBodies] call _delete;
+				[_x, _ttdBodies] call _delete;
 			}; 
 		} forEach allDeadMen;
 	};	
 	
-	if (_ttwVehicles>0) then {		
+	if (_ttdVehicles>0) then {		
 		{
 			if(!isPlayer _x) then { 	 
-				[_x, _ttwVehicles] call _delete;
+				[_x, _ttdVehicles] call _delete;
 			}; 
 		} forEach (allDead - allDeadMen);
 	};
@@ -90,26 +81,26 @@ while{true} do {
 	{	
 	    _unit = _x;
 	    
-		if (_ttwWeapons>0) then {
+		if (_ttdWeapons>0) then {
 			{
 				{ 	 
-					[_x, _ttwWeapons] call _delete;			
+					[_x, _ttdWeapons] call _delete;			
 				} forEach (getpos _unit nearObjects [_x, 100]);
 			} forEach ["WeaponHolder","GroundWeaponHolder","WeaponHolderSimulated"];
 		};
 		
-		if (_ttwPlanted>0) then {
+		if (_ttdPlanted>0) then {
 			{
 				{ 
-					[_x, _ttwPlanted] call _delete;  
+					[_x, _ttdPlanted] call _delete;  
 				} forEach (getpos _unit nearObjects [_x, 100]);
 			} forEach ["TimeBombCore"];
 		};
 		
-		if (_ttwSmokes>0) then {
+		if (_ttdSmokes>0) then {
 			{
 				{ 	 
-					[_x, _ttwSmokes] call _delete; 
+					[_x, _ttdSmokes] call _delete; 
 				} forEach (getpos _unit nearObjects [_x, 100]);
 			} forEach ["SmokeShell"];
 		};
@@ -125,18 +116,18 @@ while{true} do {
 
 	{        
 		if(isNull(_x)) then {
-			GVAR(objects) set[_forEachIndex, 0];
-			GVAR(times) set[_forEachIndex, 0];
+			_objects set[_forEachIndex, 0];
+			_items set[_forEachIndex, 0];
 		} else {
-			if(GVAR(times) select _forEachIndex < time) then {
+			if(_items select _forEachIndex < time) then {
 				deleteVehicle _x;
-				GVAR(objects) set[_forEachIndex, 0];
-				GVAR(times) set[_forEachIndex, 0];			 	
+				_objects set[_forEachIndex, 0];
+				_items set[_forEachIndex, 0];			 	
 			};
 		};	
-	} forEach GVAR(objects);
+	} forEach _objects;
 	
-	REM(GVAR(objects),0)
-	REM(GVAR(times),0)
+	REM(_objects,0)
+	REM(_items,0)
 				
 };
