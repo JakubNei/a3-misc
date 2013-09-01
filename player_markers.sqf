@@ -2,30 +2,30 @@
 	
 	AUTHOR: aeroson
 	NAME: player_markers.sqf
-	VERSION: 2.4
+	VERSION: 2.5
 	
 	DOWNLOAD & PARTICIPATE:
 	https://github.com/aeroson/a3-misc
 	http://forums.bistudio.com/showthread.php?156103-Dynamic-Player-Markers
 	
 	DESCRIPTION:
-	A script to mark players on map.
-	All markers are created locally.
-	Designed to be dynamic, small and fast.
+	A script to mark players on map
+	All markers are created locally
+	Designed to be dynamic, small and fast
 	Shows driver/pilot, vehicle name and number of passengers
 	Click vehicle marker to unfold its passengers list
-	Lets BTC mark unconscious players.
-	Shows Norrin's revive unconscious units.
-	Shows who is in control of UAV unit.
+	Lets BTC mark unconscious players
+	Shows Norrin's revive unconscious units
+	Shows who is in control of UAV unit
 	
 	USAGE:
 	in (client's) init do:
-	execvm "player_markers.sqf"; 
+	0 = [] execVM 'player_markers.sqf'; 
 
 */
 				   
-if (isDedicated) exitWith {};  
-if (!isNil{aero_player_markers_pos}) exitWith {};
+if (isDedicated) exitWith {}; // is server  
+if (!isNil{aero_player_markers_pos}) exitWith {}; // already running
 				   
 private ["_marker","_markerText","_temp","_vehicle","_markerNumber","_show","_injured","_text","_num","_getNextMarker","_getMarkerColor"];
 
@@ -63,7 +63,7 @@ while {true} do {
 		_injured = false;
 	
 		//if(true) then {
-		if(side _x == playerSide) then {		
+		if(side _x == side player) then {		
 			if((crew vehicle _x) select 0 == _x) then {
 				_show = true;
 			};		
@@ -73,20 +73,12 @@ while {true} do {
 			if(!isNil {_x getVariable "hide"}) then {
 				_show = false;
 			};  
-			if(!isNil {_x getVariable "BTC_need_revive"}) then {
-				if(typeName(_x getVariable "BTC_need_revive")=="SCALAR") then {
-					if((_x getVariable "BTC_need_revive") == 1) then {
-						_injured = true;
-						_show = false;
-					};	
-				};
-			};	  
-			if(!isNil {_x getVariable "NORRN_unconscious"}) then {
-				if(typeName(_x getVariable "NORRN_unconscious")=="BOOL") then {
-					if(_x getVariable "NORRN_unconscious" == true) then {
-						_injured = true;
-					};
-				};
+			if(_x getVariable ["BTC_need_revive",-1] == 1) then {
+				_injured = true;
+				_show = false;
+			};		  
+			if(_x getVariable ["NORRN_unconscious",false]) then {
+				_injured = true;
 			};	  
 		};
 			  	 
