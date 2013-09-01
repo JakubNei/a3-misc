@@ -2,7 +2,7 @@
 
 	AUTHOR: aeroson	
 	NAME: group_manager.sqf	
-	VERSION: 1.3
+	VERSION: 1.4
 	
 	DOWNLOAD & PARTICIPATE:
 	https://github.com/aeroson/a3-misc
@@ -15,11 +15,11 @@
 	
 	USAGE:
 	in client's init:
-	execVM 'group_manager.sqf';
+	0 = [] execVM 'group_manager.sqf';
 			
 */
 
-if(isDedicated) exitWith {};
+if(isDedicated) exitWith {}; // is server
 waitUntil{!isNull findDisplay 46};
 
 
@@ -645,10 +645,9 @@ GVAR(menu_main) = {
 	_groupsDone = [];
 	_myJoin = [group player] call GVAR(options_getJoin);  			
   	{
-  		//if(side _x == side player && group _x != group player) then {
   		if(
-		  group _x != group player && alive _x &&
-		  !(vehicle _x in allUnitsUav) 		  
+		  side _x == side player && group _x != group player 
+		  && alive _x && !(vehicle _x in allUnitsUav) 		  
 		) then {
 
 			if(_myJoin!=JOIN_DISABLED && isPlayer _x) then {
