@@ -2,23 +2,23 @@
 
 	AUTHOR: aeroson
 	NAME: vehicle_respawn.sqf
-	VERSION: 2.0
+	VERSION: 2.1
 	
 	DOWNLOAD & PARTICIPATE: 
 	https://github.com/aeroson/a3-misc
 	
 	DESCRIPTION:
-	This scripts manages respawning of all vehicles in single thread as opposed to standart one thread one vehicle.
-	I hope it will save some some cpu cycles, also it might be quite easier to set up.
-	At startup it goes thru config from start to end, if it finds class matching vehicle it uses it and repeats process for next vehicle.
-	So all you have to do is just put vehicle into your mission and it will automatically respawn.
+	This scripts manages respawning of all vehicles in single thread as opposed to standart one thread one vehicle
+	I hope it will save some some cpu cycles, also it might be quite easier to set up
+	At startup it goes thru config from start to end, if it finds class matching vehicle it uses it and repeats process for next vehicle
+	So all you have to do is just put vehicle into your mission and it will automatically respawn
 	It is uav compatible, it creates uav crew if it respawns a vehicle with cfg value isUav=1		
 	You can use: (vehicle player) call aero_vehicle_respawn_add;
 	To add your current vehicle into respawn pool	
 	
 	USAGE:
 	in (server's) init:  	
-	[
+	0 = [
 		[
 			["B_Quadbike_F"], // vehicle class(es)
 			0, // once destroyed, how long it takes to respawn 
@@ -40,9 +40,8 @@
 	] execVM 'vehicle_respawn.sqf';
 
 	
-	
 	CREDITS: 
-	it is variation of vehicle respawn by Tophe
+	It is variation of vehicle respawn by Tophe
 	http://forums.bistudio.com/showthread.php?147890-Simple-Vehicle-Respawn-Script-Arma3
 	
 */
@@ -52,11 +51,7 @@ if (!isServer) exitWith {}; // isn't server
 #define PREFIX aero
 #define COMPONENT vehicle_respawn
 
-#define DOUBLES(A,B) ##A##_##B
 #define TRIPLES(A,B,C) ##A##_##B##_##C
-#define QUOTE(A) #A
-#define CONCAT(A,B) A####B
-
 #define GVAR(A) TRIPLES(PREFIX,COMPONENT,A)
 #define QGVAR(A) QUOTE(GVAR(A))
 
@@ -69,7 +64,7 @@ GVAR(vehicles) = [];
 GVAR(data) = [];
 
 GVAR(add) = {
-	private ["_vehicle","_cfgIndex","_thisOne"];
+	private ["_vehicle","_pos","_cfgIndex","_thisOne"];
 	_vehicle = _this;
 	if(!(_vehicle in GVAR(vehicles))) then {
 		_cfgIndex = -1;		
@@ -88,16 +83,16 @@ GVAR(add) = {
 		} foreach GVAR(config);
 		if(_cfgIndex>-1) then {
 			GVAR(vehicles) set [count GVAR(vehicles), _vehicle];
+			_pos=getPosASL _vehicle;
 			GVAR(data) set [count GVAR(data), [
 				_cfgIndex, // 0 // config index
 				typeOf _vehicle, // 1 // spawn class
-				getPosASL _vehicle, // 2 // spawn pos
+				[_pos select 0, _pos select 1, (_pos select 2)+0.1], // 2 // spawn pos
 				getDir _vehicle, // 3 // spawn dir
 				0, // 4 // when to respawn
 				[0,0,0] // 5 // last pos				 
 			]];
 			_vehicle call ((GVAR(config) select _cfgIndex) select 3); // call back
-			//if((GVAR(config) select _cfgIndex) select 4) then {
 			if(SHOWSPAWNPOINT) then {
 				_vehicle setVariable ["s", getPosASL _vehicle, true]; // public spawn/repair point, so we can show it to driver locally
 			};
@@ -110,7 +105,7 @@ GVAR(add) = {
 } forEach vehicles;
 
 
-private ["_vehicle","_currentData","_currentConfig","_respawnTime","_deserted","_isUav","_positionChangeCheck","_distanceFromSpawn"];
+private ["_vehicle","_currentData","_currentConfig","_respawnTime","_oldRespawnTime","_deserted","_isUav","_positionChangeCheck","_distanceFromSpawn"];
 while {true} do {
 	sleep 5;
 	for "_i" from 0 to count(GVAR(vehicles))-1 do {
@@ -121,17 +116,18 @@ while {true} do {
 		_isUav = getNumber(configFile >> "CfgVehicles" >> (_currentData select 1) >> "isUav")==1;
         _positionChangeCheck = _isUav;
 
+		// determine potential new respawn time
         _respawnTime = 0;
 		if (
 			(!_isUav && {isPlayer _x && alive _x} count crew _vehicle <= 0 ) ||
 			(_isUav && isNull (uavControl _vehicle select 0) )  
 		) then {			 
-			if ( !alive _vehicle || damage _vehicle > 0.9) then {
+			if ( !alive _vehicle || damage _vehicle > 0.9 || !canmove _vehicle) then {
 				_respawnTime = time + (_currentConfig select 1); // destroyed
 			} else {
 				_distanceFromSpawn = (_currentData select 2) distance (getPosASL _vehicle);
-				if( _distanceFromSpawn > 0.1) then {
-					if(alive _vehicle && _distanceFromSpawn < 500) then { 
+				if( _distanceFromSpawn > 0.5) then {
+					if(_distanceFromSpawn < 500) then { 
 						_positionChangeCheck = true;
 					};					
 					_deserted = true;
@@ -142,8 +138,8 @@ while {true} do {
 						};  						
 					} else {
 						{								
-							if (isPlayer _x && _deserted) then { 
-								if (_x distance _vehicle < 200) then {
+							if(isPlayer _x && _deserted) then { 
+								if(_x distance _vehicle < 200) then {
 									_respawnTime = 0;
 									_deserted = false;					
 								}; 
@@ -157,22 +153,24 @@ while {true} do {
 			};
 		};
 				
-		// only load original timer if new is bigger
-		if(_currentData select 4 != 0 && _currentData select 4 < _respawnTime) then {
-			_respawnTime = _currentData select 4; 
+		// use new time if its smaller than old time
+		// or old time is zero		
+		_oldRespawnTime = _currentData select 4;
+		if(!(_respawnTime < _oldRespawnTime || _oldRespawnTime == 0)) then {
+			_respawnTime = _oldRespawnTime; 
 		};
-					
-						
-		if (_respawnTime > 0 ) then {
-			if (_respawnTime < time) then {
-				_vehicle setVehicleLock "LOCKED";
+								
+		// respawn vehicle													
+		if(_respawnTime > 0) then {
+			if(_respawnTime < time) then {
 				_distanceFromSpawn = (_currentData select 2) distance (getPosASL _vehicle);
 				if(_distanceFromSpawn > 100) then {
 					_vehicle setDamage 1;
 				} else {
-					deleteVehicle _vehicle;					
+					deleteVehicle _vehicle;
+					sleep 2;					
 				};				          
-				_vehicle = createVehicle [(_currentData select 1), (_currentData select 2), [], 100,""];                         
+				_vehicle = createVehicle [(_currentData select 1), (_currentData select 2), [], 0,""];                         
 				//_vehicle setPosASL (_currentData select 2);
 				_vehicle setDir (_currentData select 3); 
 				_respawnTime = 0;
@@ -181,7 +179,6 @@ while {true} do {
 					createVehicleCrew _vehicle; 	
 				};
 				GVAR(vehicles) set [_i, _vehicle];
-				//if(_currentConfig select 4) then {
 				if(SHOWSPAWNPOINT) then {
 					_vehicle setVariable ["s", _currentData select 2, true]; // public spawn point, so we can show it to driver locally
 				};
@@ -192,7 +189,6 @@ while {true} do {
 		GVAR(data) set [_i, _currentData];	
 		 
 	};
-
 };
 
 
