@@ -5,22 +5,22 @@
 	VERSION: 2.5
 	
 	DOWNLOAD & PARTICIPATE:
-	https://github.com/aeroson/a3-misc
-	http://forums.bistudio.com/showthread.php?156103-Dynamic-Player-Markers
+		https://github.com/aeroson/a3-misc
+		http://forums.bistudio.com/showthread.php?156103-Dynamic-Player-Markers
 	
 	DESCRIPTION:
-	A script to mark players on map
-	All markers are created locally
-	Designed to be dynamic, small and fast
-	Shows driver/pilot, vehicle name and number of passengers
-	Click vehicle marker to unfold its passengers list
-	Lets BTC mark unconscious players
-	Shows Norrin's revive unconscious units
-	Shows who is in control of UAV unit
+		A script to mark players on map
+		All markers are created locally
+		Designed to be dynamic, small and fast
+		Shows driver/pilot, vehicle name and number of passengers
+		Click vehicle marker to unfold its passengers list
+		Lets BTC mark unconscious players
+		Shows Norrin's revive unconscious units
+		Shows who is in control of UAV unit
 	
 	USAGE:
-	in (client's) init do:
-	0 = [] execVM 'player_markers.sqf'; 
+		in (client's) init do:		
+		0 = [] execVM 'player_markers.sqf';			 			 	
 
 */
 				   
