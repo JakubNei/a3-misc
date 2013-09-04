@@ -2,7 +2,7 @@
 
 	AUTHOR: aeroson	
 	NAME: group_manager.sqf	
-	VERSION: 1.4
+	VERSION: 1.5
 	
 	DOWNLOAD & PARTICIPATE:
 	https://github.com/aeroson/a3-misc
@@ -91,7 +91,7 @@ waitUntil{!isNull findDisplay 46};
 
 GVAR(possibleTargets) = [];
 GVAR(actions_custom) = [];
-GVAR(add_custom_action) = {
+GVAR(actions_add) = {
 	GVAR(actions_custom) set [count GVAR(actions_custom), _this];
 };
 GVAR(opened) = false;
@@ -118,23 +118,23 @@ GVAR(playersOnly) = {
 	_out;	
 };
 
-GVAR(actions) = [];
-GVAR(actions_add) = {
-	GVAR(actions) set [count GVAR(actions), _this];
+GVAR(actions_ids) = [];
+GVAR(actions_addId) = {
+	GVAR(actions_ids) set [count GVAR(actions_ids), _this];
 };
 GVAR(actions_remove) = {
 	{
 		player removeAction _x;
-	} forEach GVAR(actions);
-	GVAR(actions) = [];	
+	} forEach GVAR(actions_ids);
+	GVAR(actions_ids) = [];	
 };
-GVAR(actions_addBack) = {
+GVAR(actions_addBack) = {	
 	player addAction [
 		"<t color='#cccccc'><img image='\A3\ui_f\data\gui\rsc\rscdisplayarcademap\icon_sidebar_show.paa' size='0.7' /> ... Back</t>",
-		{ call GVAR(menu_main); },
-		[],
+		([_this,0,{call GVAR(menu_main);}] call BIS_fnc_param),
+		([_this,1,[]] call BIS_fnc_param),
 		1000
-	] call GVAR(actions_add);
+	] call GVAR(actions_addId);
 };
 
 
@@ -386,7 +386,7 @@ GVAR(menu_giveLeaderShip) = {
 	};
 	call GVAR(actions_remove);
 	{
-		PUSH_START(GVAR(actions))
+		PUSH_START(GVAR(actions_ids))
 			player addAction [
 				format["<t color='#0099ee'><img image='\A3\ui_f\data\gui\Rsc\RscDisplayConfigViewer\bookmark_gs.paa' size='0.7' /> Give leadership to %1</t>", name _x],
 				{ _THIS(3) call GVAR(giveLeaderShip); },
@@ -428,7 +428,7 @@ GVAR(menu_squadOptions) = {
 	private ["_join","_accept"];
 	_join = [group player] call GVAR(options_getJoin);
 	{
-		PUSH_START(GVAR(actions))
+		PUSH_START(GVAR(actions_ids))
 			player addAction [
 				format["<t color='#0099ee'>%1 %2</t>", _x, if(_join==_forEachIndex) then {"(Current)"} else {""}],
 				{ _args=_THIS(3); (_args select 0) setVariable ["j", (_args select 1), true]; call GVAR(menu_squadOptions); },
@@ -440,7 +440,7 @@ GVAR(menu_squadOptions) = {
 	
 	_accept = [group player] call GVAR(options_getAccept);  		
 	{
-		PUSH_START(GVAR(actions))
+		PUSH_START(GVAR(actions_ids))
 			player addAction [
 				format["<t color='#0077ee'>%1 %2</t>", _x, if(_accept==_forEachIndex) then {"(Current)"} else {""}],
 				{ _args=_THIS(3); (_args select 0) setVariable ["a", (_args select 1), true]; call GVAR(menu_squadOptions); },
@@ -462,7 +462,7 @@ GVAR(menu_kickSquadMember) = {
 	};
 	call GVAR(actions_remove);
 	{
-		PUSH_START(GVAR(actions)) 
+		PUSH_START(GVAR(actions_ids)) 
 			player addAction [
 				format["<t color='#ff8822'><img image='\A3\ui_f\data\gui\rsc\rscdisplayarcademap\top_close_gs.paa' size='0.7' /> Kick %1</t>", name _x],
 				{ _THIS(3) call GVAR(kickSquadMember); },
@@ -530,12 +530,12 @@ GVAR(menu_main) = {
 	if(!GVAR(opened)) exitWith {};
 
 	{
-		PUSH(GVAR(actions), player addAction _x);
+		PUSH(GVAR(actions_ids), player addAction _x);
 	} forEach GVAR(actions_custom);	
 
 	if(leader player == player) then {
 		if(count units group player > 1)then {
-			PUSH_START(GVAR(actions))
+			PUSH_START(GVAR(actions_ids))
 				player addAction [
 					"<t color='#0099ee'><img image='\A3\ui_f\data\gui\Rsc\RscDisplayConfigViewer\bookmark_gs.paa' size='0.7' /> Give Leadership to ...</t>",
 					{ _THIS(3) call GVAR(menu_giveLeaderShip); },
@@ -543,7 +543,7 @@ GVAR(menu_main) = {
 					9010				
 				]
 			PUSH_END
-			PUSH_START(GVAR(actions))
+			PUSH_START(GVAR(actions_ids))
 				player addAction [
 					"<t color='#ff8822'><img image='\A3\ui_f\data\gui\rsc\rscdisplayarcademap\top_close_gs.paa' size='0.7' /> Kick Squad Member ...</t>",
 					{ _THIS(3) call GVAR(menu_kickSquadMember); },
@@ -552,7 +552,7 @@ GVAR(menu_main) = {
 				]
 			PUSH_END
 		};
-		PUSH_START(GVAR(actions))
+		PUSH_START(GVAR(actions_ids))
 			player addAction [
 				"<t color='#0088ee'><img image='\A3\ui_f\data\gui\rsc\rscdisplayarcademap\icon_config_ca.paa' size='0.7' /> Squad Options ...</t>",
 				{ _THIS(3) call GVAR(menu_squadOptions); },
@@ -562,7 +562,7 @@ GVAR(menu_main) = {
 		PUSH_END
 	} else {
 		if([player] call GVAR(canTakeLeadership)) then {
-			PUSH_START(GVAR(actions))
+			PUSH_START(GVAR(actions_ids))
 				player addAction [
 					"<t color='#0099ee'><img image='\A3\ui_f\data\gui\Rsc\RscDisplayConfigViewer\bookmark_gs.paa' size='0.7' /> Take Leadership</t>",
 					{ _THIS(3) call GVAR(takeLeaderShip) },
@@ -574,7 +574,7 @@ GVAR(menu_main) = {
 	};
 
 	if(count units group player > 1)then {	
-		PUSH_START(GVAR(actions))
+		PUSH_START(GVAR(actions_ids))
 			player addAction [
 				"<t color='#ff1111'><img image='\A3\ui_f\data\gui\rsc\rscdisplayarcademap\icon_sidebar_hide_up.paa' size='0.7' /> Leave squad</t>",
 				{ _THIS(3) call GVAR(leaveGroup) },
@@ -590,7 +590,7 @@ GVAR(menu_main) = {
 	{
 		_unit1 = _x select 1;
 		if(_unit1 in units (_x select 2) && (_x select 0) + TIMEOUT > time) then {						
-			PUSH_START(GVAR(actions))
+			PUSH_START(GVAR(actions_ids))
 				player addAction [
 					format["<t color='#00cc00'><img image='\A3\ui_f\data\gui\rsc\rscdisplayarcademap\icon_continue_ca.paa' size='0.7' /> Accept invite by %1 (led by %2)</t>", name _unit1, name leader _unit1],
 					{ _THIS(3) call GVAR(invite_accepted) },
@@ -598,7 +598,7 @@ GVAR(menu_main) = {
 					7500-_forEachIndex					
 				]
 			PUSH_END			
-			PUSH_START(GVAR(actions))
+			PUSH_START(GVAR(actions_ids))
 				player addAction [
 					format["<t color='#ff1111'><img image='\A3\ui_f\data\gui\rsc\rscdisplayarcademap\top_close_gs.paa' size='0.7' /> Decline invite by %1 (led by %2)</t>", name _unit1, name leader _unit1],
 					{ _THIS(3) call GVAR(invite_declined) },
@@ -618,7 +618,7 @@ GVAR(menu_main) = {
 	{
 	  	_unit1 = _x select 1;
 	  	if(player in units (_x select 2) && (_x select 0) + TIMEOUT > time) then {						
-			PUSH_START(GVAR(actions))
+			PUSH_START(GVAR(actions_ids))
 				player addAction [
 					format["<t color='#00cc00'><img image='\A3\ui_f\data\gui\rsc\rscdisplayarcademap\icon_continue_ca.paa' size='0.7' /> Accept join request by %1</t>", name _unit1],
 					{ _THIS(3) call GVAR(request_accepted) },
@@ -626,7 +626,7 @@ GVAR(menu_main) = {
 					6500-_forEachIndex
 				]
 			PUSH_END			
-			PUSH_START(GVAR(actions))
+			PUSH_START(GVAR(actions_ids))
 				player addAction [
 					format["<t color='#ff1111'><img image='\A3\ui_f\data\gui\rsc\rscdisplayarcademap\top_close_gs.paa' size='0.7' /> Decline join request by %1</t>", name _unit1],
 					{ _THIS(3) call GVAR(request_declined) },
@@ -656,7 +656,7 @@ GVAR(menu_main) = {
 					(_myJoin==JOIN_INVITE_BY_SQUAD && player in units group player) ||
 					(_myJoin==JOIN_INVITE_BY_LEADER && leader player == player)
 				) then {
-					PUSH_START(GVAR(actions))
+					PUSH_START(GVAR(actions_ids))
 						player addAction [
 							format["<t color='#ffcc66'><img image='\A3\ui_f\data\gui\rsc\rscdisplayarcademap\icon_toolbox_units_ca.paa' size='0.7' /> Invite %1 into your squad</t>", name _x],
 							{ _THIS(3) call GVAR(invite); },
@@ -672,7 +672,7 @@ GVAR(menu_main) = {
 				_join = [group _x] call GVAR(options_getJoin);
 														
 				if(_join==JOIN_FREE) then {
-					PUSH_START(GVAR(actions))
+					PUSH_START(GVAR(actions_ids))
 						player addAction [
 							format["<t color='#ffcc66'><img image='\A3\ui_f\data\gui\rsc\rscdisplayarcademap\icon_toolbox_units_ca.paa' size='0.7' /> Join %1's squad (led by %2)</t>", name _x, name leader _x],
 							{ _THIS(3) call GVAR(join); },
@@ -686,7 +686,7 @@ GVAR(menu_main) = {
 						(_accept==ACCEPT_BY_SQUAD && ({isPlayer _x} count units group _x>0)) ||
 						(_accept==ACCEPT_BY_LEADER && isPlayer leader group _x) 
 					) then {
-						PUSH_START(GVAR(actions)) 
+						PUSH_START(GVAR(actions_ids)) 
 							player addAction [
 								format["<t color='#ffcc66'><img image='\A3\ui_f\data\gui\rsc\rscdisplayarcademap\icon_toolbox_units_ca.paa' size='0.7' /> Request to join %1's squad (led by %2)</t>", name _x, name leader _x],
 								{ _THIS(3) call GVAR(request); },
