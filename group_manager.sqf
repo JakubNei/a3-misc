@@ -2,19 +2,20 @@
 
 	AUTHOR: aeroson	
 	NAME: group_manager.sqf	
-	VERSION: 1.5
+	VERSION: 1.6
 	
 	DOWNLOAD & PARTICIPATE:
 	https://github.com/aeroson/a3-misc
+	http://forums.bistudio.com/showthread.php?163206-Group-Manager
 	
 	DESCRIPTION:
 	Hold T and use scrollwheel to see squad manager menu
 	You can invite others, request to join, or join squad based on squad options
-	Also leave squad, kick members or take leadership if you have better score	than current squad leader
-	Potential targets is either cursorTrager and/or everyone within 5m range	
+	You can also leave squad, kick members or take leadership if you have better score than current squad leader
+	Potential targets is either cursorTrager and/or everyone within 5m range
 	
 	USAGE:
-	in client's init:
+	in (client's) init:
 	0 = [] execVM 'group_manager.sqf';
 			
 */
@@ -131,7 +132,7 @@ GVAR(actions_remove) = {
 GVAR(actions_addBack) = {	
 	player addAction [
 		"<t color='#cccccc'><img image='\A3\ui_f\data\gui\rsc\rscdisplayarcademap\icon_sidebar_show.paa' size='0.7' /> ... Back</t>",
-		([_this,0,{call GVAR(menu_main);}] call BIS_fnc_param),
+		([_this,0,{[] call GVAR(menu_main);}] call BIS_fnc_param),
 		([_this,1,[]] call BIS_fnc_param),
 		1000
 	] call GVAR(actions_addId);
@@ -151,7 +152,7 @@ GVAR(join) = {
 	format["You have joined %1's squad led by %2", name _THIS(0), name leader _THIS(0)] call GVAR(msg);	
 	[player] joinSilent group _THIS(0);
 	waitUntil{group player==group _THIS(0)};	
-	call GVAR(menu_main); 	
+	[] call GVAR(menu_main); 	
 };
 
 // you left your group
@@ -164,7 +165,7 @@ GVAR(leaveGroup) = {
 	] spawn BIS_fnc_MP;
 	"You have left squad" call GVAR(msg);
 	[player] joinSilent createGroup (side player);
-	call GVAR(menu_main);			
+	[] call GVAR(menu_main);			
 };
 
 
@@ -193,7 +194,7 @@ GVAR(invite) = {
 		QGVAR(invited),
 		[[_THIS(0)]] call GVAR(playersOnly)	
 	] spawn BIS_fnc_MP;
-	call GVAR(menu_main);				 	
+	[] call GVAR(menu_main);				 	
 };
 
 // [unit1, group1] // you got invited by unit1 to join a unit1's group1
@@ -210,7 +211,7 @@ GVAR(invited) = {
 			[time, _THIS(0), _THIS(1)]
 		PUSH_END 
 	};
-	call GVAR(menu_main);
+	[] call GVAR(menu_main);
 };
 
 // [unit1, forEachIndex] // you have accepted invite by unit1 to unit1's group, forEachIndex in GVAR(invites) 
@@ -228,7 +229,7 @@ GVAR(invite_accepted) = {
 	] spawn BIS_fnc_MP;
 	[player] joinSilent group _THIS(0);	
 	GVAR(invites) set[_THIS(1), 0];
-	call GVAR(menu_main);
+	[] call GVAR(menu_main);
 };
 
 // [unit1, forEachIndex] // you have declined invite by unit1 to unit1's group, forEachIndex in GVAR(invites)
@@ -240,7 +241,7 @@ GVAR(invite_declined) = {
 		[[_THIS(0)]] call GVAR(playersOnly)		
 	] spawn BIS_fnc_MP;
 	GVAR(invites) set[_THIS(1), 0];
-	call GVAR(menu_main);	
+	[] call GVAR(menu_main);	
 };
 
 
@@ -267,7 +268,7 @@ GVAR(request) = {
 			if(_accept==ACCEPT_BY_SQUAD) then { units group _THIS(1) } else { [leader _THIS(1)] }
 		] call GVAR(playersOnly)
 	] spawn BIS_fnc_MP;
-	call GVAR(menu_main);		
+	[] call GVAR(menu_main);		
 };
 
 // [unit1, group1] // unit1 requested to join yours group1
@@ -283,7 +284,7 @@ GVAR(requested) = {
 			[time, _THIS(0), _THIS(1)]
 		PUSH_END
 	};
-	call GVAR(menu_main);
+	[] call GVAR(menu_main);
 };
 
 // [unit1, forEachIndex] // you have accepted request from unit1 to join your group, forEachIndex in GVAR(requests) 
@@ -301,7 +302,7 @@ GVAR(request_accepted) = {
 	] spawn BIS_fnc_MP;		
 	[_THIS(0)] joinSilent group player;
 	GVAR(requests) set[_THIS(1), 0];
-	call GVAR(menu_main);
+	[] call GVAR(menu_main);
 };
 
 // [unit1, forEachIndex] // you have declined request from unit1 to join your group, forEachIndex in GVAR(requests)
@@ -313,7 +314,7 @@ GVAR(request_declined) = {
 		[[_THIS(0)]] call GVAR(playersOnly)		
 	] spawn BIS_fnc_MP;	
 	GVAR(requests) set[_THIS(1), 0];
-	call GVAR(menu_main);
+	[] call GVAR(menu_main);
 };
 
 
@@ -323,7 +324,7 @@ GVAR(takeLeaderShip) = {
 	LOG(QGVAR(takeLeaderShip))
 	if(!([player] call GVAR(canTakeLeadership))) exitWith {
 		"You can't take leadership anymore" call GVAR(msg); 
-		call GVAR(menu_main);
+		[] call GVAR(menu_main);
 	};
 	"You took leadership" call GVAR(msg);	
 	[
@@ -338,7 +339,7 @@ GVAR(takeLeaderShip) = {
 		leader player		
 	] spawn BIS_fnc_MP;	
 	waitUntil{_oldLeader!=leader player};
-	call GVAR(menu_main);	 
+	[] call GVAR(menu_main);	 
 }; 
 
 // [unit1] // unit1 takes leadership of his+yours group
@@ -348,7 +349,7 @@ GVAR(takeLeaderShip_remote) = {
 			format["%1 took leadership from you", name _THIS(0)] call GVAR(msg);
 		};
 		(group player) selectLeader _THIS(0);
-		call GVAR(menu_main);
+		[] call GVAR(menu_main);
 	};
 };
 
@@ -382,9 +383,9 @@ GVAR(menu_giveLeaderShip) = {
 	LOG(QGVAR(menu_giveLeaderShip))
 	if(leader player!=player) exitWith {
 		"You are not leader anymore" call GVAR(msg); 
-		call GVAR(menu_main);
+		[] call GVAR(menu_main);
 	};
-	call GVAR(actions_remove);
+	[] call GVAR(actions_remove);
 	{
 		PUSH_START(GVAR(actions_ids))
 			player addAction [
@@ -395,7 +396,7 @@ GVAR(menu_giveLeaderShip) = {
 			]
 		PUSH_END
 	} forEach ((units group player)-[player]);
-	call GVAR(actions_addBack);
+	[]call GVAR(actions_addBack);
 };
 
 
@@ -413,7 +414,7 @@ GVAR(giveLeaderShip) = {
 		[[_THIS(0)]] call GVAR(playersOnly)		
 	] spawn BIS_fnc_MP;			
 	(group _THIS(0)) selectLeader _THIS(0);
-	call GVAR(menu_main);
+	[] call GVAR(menu_main);
 };
 
 
@@ -422,9 +423,9 @@ GVAR(menu_squadOptions) = {
 	LOG(QGVAR(menu_squadOptions))
 	if(leader player!=player) exitWith {
 		"You are not leader anymore" call GVAR(msg); 
-		call GVAR(menu_main);
+		[] call GVAR(menu_main);
 	};
-	call GVAR(actions_remove);	
+	[] call GVAR(actions_remove);	
 	private ["_join","_accept"];
 	_join = [group player] call GVAR(options_getJoin);
 	{
@@ -436,8 +437,7 @@ GVAR(menu_squadOptions) = {
 				6000-_forEachIndex
 			]
 		PUSH_END		
-	} forEach ["Anyone can join","Squad members can invite","Squad leader can invite","Disable invite"];
-	
+	} forEach ["Anyone can join","Squad members can invite","Squad leader can invite","Disable invite"];	
 	_accept = [group player] call GVAR(options_getAccept);  		
 	{
 		PUSH_START(GVAR(actions_ids))
@@ -448,9 +448,8 @@ GVAR(menu_squadOptions) = {
 				5000-_forEachIndex
 			]
 		PUSH_END		
-	} forEach ["Squad members can accept join request","Squad leader can accept join request","Disable join request"];
-	
-	call GVAR(actions_addBack);	
+	} forEach ["Squad members can accept join request","Squad leader can accept join request","Disable join request"];	
+	[] call GVAR(actions_addBack);	
 };
 
 // show menu to kick squad member
@@ -458,9 +457,9 @@ GVAR(menu_kickSquadMember) = {
 	LOG(QGVAR(menu_kickSquadMember))
 	if(leader player!=player) exitWith {
 		"You are not leader anymore" call GVAR(msg); 
-		call GVAR(menu_main);
+		[] call GVAR(menu_main);
 	};
-	call GVAR(actions_remove);
+	[] call GVAR(actions_remove);
 	{
 		PUSH_START(GVAR(actions_ids)) 
 			player addAction [
@@ -471,7 +470,7 @@ GVAR(menu_kickSquadMember) = {
 			]	
 		PUSH_END
 	} forEach ((units group player)-[player]);	
-	call GVAR(actions_addBack);
+	[]call GVAR(actions_addBack);
 }; 
 
 // [unit1] // you are kicking unit1
@@ -489,7 +488,7 @@ GVAR(kickSquadMember) = {
 		_THIS(0)		
 	] spawn BIS_fnc_MP;
 	waitUntil{!(_THIS(0) in units group player)};
-	call GVAR(menu_main);
+	[] call GVAR(menu_main);
 };
 
 // [unit1, unit2] // unit2 (local) have been kicked by unit1
@@ -498,7 +497,7 @@ GVAR(kickSquadMember_remote) = {
 		format["You have been kicked by %1", name _THIS(0)] call GVAR(msg);
 	};		
 	[_THIS(1)] joinSilent createGroup (side _THIS(1));
-	call GVAR(menu_main);
+	[] call GVAR(menu_main);
 };
 
 
@@ -526,7 +525,7 @@ GVAR(options_getAccept) = {
 
 // main menu D:
 GVAR(menu_main) = {
-	call GVAR(actions_remove);
+	[] call GVAR(actions_remove);
 	if(!GVAR(opened)) exitWith {};
 
 	{
@@ -723,7 +722,7 @@ GVAR(keyDown) = {
 					PUSH_END
 				}; 			 
 			} forEach nearestObjects [player, ["man"], 5];
-			call GVAR(menu_main);	
+			[] call GVAR(menu_main);	
 		};		
 	};	
 	false;
@@ -735,7 +734,7 @@ GVAR(keyUp) = {
 	if(_THIS(1)==KEY) then {
 		if(GVAR(opened)) then {
 			GVAR(opened) = false;
-			call GVAR(actions_remove);
+			[] call GVAR(actions_remove);
 		};
 	};	
 	false;
