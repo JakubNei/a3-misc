@@ -82,7 +82,7 @@ GVAR(menu_main)={
 
 
 GVAR(menu_shoulder)={
-	call aero_gm_actions_remove;	
+	[] call aero_gm_actions_remove;	
 	{
 		(player addAction _x) call aero_gm_actions_addId;
 	} forEach [
@@ -108,17 +108,21 @@ GVAR(chemlight_attach) = {
 	PUSH(GVAR(attached),_chemlight)
 };
 GVAR(chemlights_detach) = {
+	[] call aero_gm_menu_main;
 	{
 		deletevehicle _x;
 	} forEach GVAR(attached);
+	GVAR(attached)=[];
 };
-
-
 
 [
 	"<t color='#0033ee'><img image='\A3\ui_f\data\IGUI\RscIngameUI\RscOptics\laser_designator_iconlaseron.paa' size='0.7' /> Chemlights ...</t>",
 	{ [] call GVAR(menu_main); },
 	[],
-	100
+	100,
+	true,
+	true,
+	"",
+	"({_x in ['Chemlight_red','Chemlight_green','Chemlight_blue','Chemlight_yellow']} count magazines player > 0) || count aero_chemlights_attached > 0"
 ] call aero_gm_actions_add;
 
