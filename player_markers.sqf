@@ -21,6 +21,7 @@
 	USAGE:
 		in (client's) init do:		
 		0 = [] execVM 'player_markers.sqf';
+		no options, default behaviour is used:
 		this will show players for your side in multiplayer
 		or you and all ais on your side in singleplayer
 		
