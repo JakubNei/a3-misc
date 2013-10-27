@@ -2,7 +2,7 @@
 	
 	AUTHOR: aeroson
 	NAME: player_markers.sqf
-	VERSION: 2.5
+	VERSION: 2.6
 	
 	DOWNLOAD & PARTICIPATE:
 		https://github.com/aeroson/a3-misc
@@ -20,14 +20,47 @@
 	
 	USAGE:
 		in (client's) init do:		
-		0 = [] execVM 'player_markers.sqf';			 			 	
+		0 = [] execVM 'player_markers.sqf';
+		this will show players for your side in multiplayer
+		or you and all ais on your side in singleplayer
+		
+		to change this you can add any of the following options
+			"players" will show players
+			"ais" will show ais
+			"allsides" will show all sides not only the units on player's side
+		0 = ["player","ai"] execVM 'player_markers.sqf';
+		this will show all player and all ais, you can add allside if you want to show all sides 
+		once you add any of these default behaviour is not used								 			 	
 
 */
 				   
 if (isDedicated) exitWith {}; // is server  
 if (!isNil{aero_player_markers_pos}) exitWith {}; // already running
 				   
-private ["_marker","_markerText","_temp","_vehicle","_markerNumber","_show","_injured","_text","_num","_getNextMarker","_getMarkerColor"];
+private ["_marker","_markerText","_temp","_vehicle","_markerNumber","_show","_injured","_text","_num","_getNextMarker","_getMarkerColor","_showAllSides","_showPlayers","_showAIs","_l"];
+
+_showAllSides=false;
+_showPlayers=false;
+_showAIs=false;
+
+if(count _this==0) then {
+	_showAllSides=false;
+	_showPlayers=true;
+	_showAIs=!isMultiplayer;
+};
+
+{
+	_l=toLower _x;
+	if(_l in ["player","players"]) then {
+		_showPlayers=true;
+	};
+	if(_l in ["ai","ais"]) then {
+		_showAIs=true;
+	};
+	if(_l in ["allside","allsides"]) then {
+		_showAllSides=true;
+	};
+} forEach _this;
 
 aero_player_markers_pos = [0,0];
 onMapSingleClick "aero_player_markers_pos=_pos;";
@@ -61,25 +94,30 @@ while {true} do {
 	{
 		_show = false;
 		_injured = false;
-	
-		//if(true) then {
-		if(side _x == side player) then {		
-			if((crew vehicle _x) select 0 == _x) then {
-				_show = true;
-			};		
-			if(!alive _x || damage _x > 0.9) then {
-				_injured = true;
-			};	  
-			if(!isNil {_x getVariable "hide"}) then {
-				_show = false;
-			};  
-			if(_x getVariable ["BTC_need_revive",-1] == 1) then {
-				_injured = true;
-				_show = false;
-			};		  
-			if(_x getVariable ["NORRN_unconscious",false]) then {
-				_injured = true;
-			};	  
+		
+		
+		if(
+			(_showAIs && !isPlayer _x) ||
+			(_showPlayers && isPlayer _x)
+		) then {
+			if(_showAllSides || side _x==side player) then {		
+				if((crew vehicle _x) select 0 == _x) then {
+					_show = true;
+				};		
+				if(!alive _x || damage _x > 0.9) then {
+					_injured = true;
+				};	  
+				if(!isNil {_x getVariable "hide"}) then {
+					_show = false;
+				};  
+				if(_x getVariable ["BTC_need_revive",-1] == 1) then {
+					_injured = true;
+					_show = false;
+				};		  
+				if(_x getVariable ["NORRN_unconscious",false]) then {
+					_injured = true;
+				};	  
+			};			
 		};
 			  	 
 		if(_show) then {
@@ -136,7 +174,7 @@ while {true} do {
 			_markerText setMarkerTextLocal _text;
 		};
 		
-	} forEach playableUnits;
+	} forEach allUnits;
 
 
 	// show player controlled uavs
