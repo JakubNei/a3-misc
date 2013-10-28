@@ -21,7 +21,6 @@
 	USAGE:
 		in (client's) init do:		
 		0 = [] execVM 'player_markers.sqf';
-		no options, default behaviour is used:
 		this will show players for your side in multiplayer
 		or you and all ais on your side in singleplayer
 		
@@ -38,7 +37,7 @@
 if (isDedicated) exitWith {}; // is server  
 if (!isNil{aero_player_markers_pos}) exitWith {}; // already running
 				   
-private ["_marker","_markerText","_temp","_vehicle","_markerNumber","_show","_injured","_text","_num","_getNextMarker","_getMarkerColor","_showAllSides","_showPlayers","_showAIs","_l"];
+private ["_marker","_markerText","_temp","_unit","_vehicle","_markerNumber","_show","_injured","_text","_num","_getNextMarker","_getMarkerColor","_showAllSides","_showPlayers","_showAIs","_l"];
 
 _showAllSides=false;
 _showPlayers=false;
@@ -49,7 +48,7 @@ if(count _this==0) then {
 	_showPlayers=true;
 	_showAIs=!isMultiplayer;
 };
-
+                         
 {
 	_l=toLower _x;
 	if(_l in ["player","players"]) then {
@@ -95,36 +94,38 @@ while {true} do {
 	{
 		_show = false;
 		_injured = false;
-		
+		_unit = _x;
 		
 		if(
-			(_showAIs && !isPlayer _x) ||
-			(_showPlayers && isPlayer _x)
-		) then {
-			if(_showAllSides || side _x==side player) then {		
-				if((crew vehicle _x) select 0 == _x) then {
-					_show = true;
-				};		
-				if(!alive _x || damage _x > 0.9) then {
-					_injured = true;
-				};	  
-				if(!isNil {_x getVariable "hide"}) then {
-					_show = false;
-				};  
-				if(_x getVariable ["BTC_need_revive",-1] == 1) then {
-					_injured = true;
-					_show = false;
-				};		  
-				if(_x getVariable ["NORRN_unconscious",false]) then {
-					_injured = true;
-				};	  
-			};			
+			(
+				(_showAIs && {!isPlayer _unit} && {0=={ {_x==_unit} count crew _x>0} count allUnitsUav}) ||
+				(_showPlayers && {isPlayer _unit})
+			) && {
+				_showAllSides || side _unit==side player
+			}
+		) then {	
+			if((crew vehicle _unit) select 0 == _unit) then {
+				_show = true;
+			};		
+			if(!alive _unit || damage _unit > 0.9) then {
+				_injured = true;
+			};	  
+			if(!isNil {_unit getVariable "hide"}) then {
+				_show = false;
+			};  
+			if(_unit getVariable ["BTC_need_revive",-1] == 1) then {
+				_injured = true;
+				_show = false;
+			};		  
+			if(_unit getVariable ["NORRN_unconscious",false]) then {
+				_injured = true;
+			};	  			
 		};
 			  	 
 		if(_show) then {
-			_vehicle = vehicle _x;  				  	
+			_vehicle = vehicle _unit;  				  	
 			_pos = getPosATL _vehicle;		  					
-			_color = _x call _getMarkerColor;  
+			_color = _unit call _getMarkerColor;  
 
 			_markerText = _pos call _getNextMarker;						
 			_markerText setMarkerColorLocal _color;	 						 				
@@ -142,7 +143,7 @@ while {true} do {
 				_marker setMarkerSizeLocal [0.5,0.7];
 			};
 			
- 			if(_vehicle != _x && !(_vehicle isKindOf "ParachuteBase")) then {			 						
+ 			if(_vehicle != _unit && !(_vehicle isKindOf "ParachuteBase")) then {			 						
 				_text = format["[%1]", getText(configFile>>"CfgVehicles">>typeOf _vehicle>>"DisplayName")];
 				if(!isNull driver _vehicle) then {
 					_text = format["%1 %2", name driver _vehicle, _text];	
@@ -181,8 +182,15 @@ while {true} do {
 	// show player controlled uavs
 	{
 		if(isUavConnected _x) then {	
-			_operator=(uavControl _x) select 0;
-			if(isPlayer _operator && side _operator == playerSide) then {
+			_unit=(uavControl _x) select 0;
+			if(
+				(				
+					(_showAIs && {!isPlayer _unit}) || 
+					(_showPlayers && {isPlayer _unit})
+				) && {
+					_showAllSides || side _unit==side player
+				}
+			) then {
 				_color = _x call _getMarkerColor;								  										  				
 				_pos = getPosATL _x;
 				
@@ -191,7 +199,7 @@ while {true} do {
 				_marker setMarkerDirLocal getDir _x;
 				_marker setMarkerTypeLocal "mil_triangle";			
 				_marker setMarkerTextLocal "";
-				if(_operator == player) then {
+				if(_unit == player) then {
 					_marker setMarkerSizeLocal [0.8,1];
 				} else {
 					_marker setMarkerSizeLocal [0.5,0.7];
@@ -201,7 +209,7 @@ while {true} do {
 				_markerText setMarkerColorLocal _color;	   
 				_markerText setMarkerTypeLocal "c_unknown";
 				_markerText setMarkerSizeLocal [0.8,0];
-				_markerText setMarkerTextLocal format["%1", name _operator];				  
+				_markerText setMarkerTextLocal format["%1 [%2]", name _unit, getText(configFile>>"CfgVehicles">>typeOf _x>>"DisplayName")];	
 			};
 		};
 	} forEach allUnitsUav; 
