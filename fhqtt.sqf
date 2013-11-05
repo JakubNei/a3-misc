@@ -8,6 +8,10 @@
  * { playerside == west && ! (player in units PlayerGroup) }
  *
  */
+ 
+/* FHQ TaskTracker, forums thread
+ * http://forums.bistudio.com/showthread.php?151680-FHQ-TaskTracker
+ */
 
 /* FHQ TaskTracker for the FHQ Multiplayer framework
  * 
