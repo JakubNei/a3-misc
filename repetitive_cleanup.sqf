@@ -2,7 +2,7 @@
 	
 	AUTHOR: aeroson
 	NAME: repetitive_cleanup.sqf
-	VERSION: 1.8
+	VERSION: 1.9
 	
 	DESCRIPTION:
 	Can delete everything that is not really needed 
@@ -37,7 +37,7 @@ if (!isServer) exitWith {}; // isn't server
 #define PUSH(A,B) A set [count (A),B];
 #define REM(A,B) A=A-[B];
 
-private ["_ttdBodies","_ttdVehiclesDead","_ttdVehiclesImmobile","_ttdWeapons","_ttdPlanted","_ttdSmokes","_delete","_unit","_objects","_times"];
+private ["_ttdBodies","_ttdVehiclesDead","_ttdVehiclesImmobile","_ttdWeapons","_ttdPlanted","_ttdSmokes","_addToCleanup","_unit","_objectsToCleanup","_timesWhenToCleanup","_addToCleanup","_removeFromCleanup"];
 
 _ttdBodies=[_this,0,0,[0]] call BIS_fnc_param;
 _ttdVehiclesDead=[_this,1,0,[0]] call BIS_fnc_param;
@@ -46,27 +46,36 @@ _ttdWeapons=[_this,3,0,[0]] call BIS_fnc_param;
 _ttdPlanted=[_this,4,0,[0]] call BIS_fnc_param;
 _ttdSmokes=[_this,5,0,[0]] call BIS_fnc_param;
 
-if (_ttdWeapons<=0 && _ttdPlanted<=0 && _ttdSmokes<=0 && _ttdBodies<=0 && _ttdVehiclesDead<=0 && _ttdVehiclesImmobile<=0) exitWith {};
+if({_x>0}count _this==0) exitWith {}; // all times are 0, we do not want to run this script at all
 
 
-_objects=[];
-_times=[];
+_objectsToCleanup=[];
+_timesWhenToCleanup=[];
 
-_delete = {
+_addToCleanup = {
 	_object = _this select 0;
 	if(!(_object getVariable["persistent",false])) then {
 		_newTime = (_this select 1)+time;
-		_index = _objects find _object;
+		_index = _objectsToCleanup find _object;
 		if(_index == -1) then {
-			PUSH(_objects,_object)
-			PUSH(_times,_newTime)
+			PUSH(_objectsToCleanup,_object)
+			PUSH(_timesWhenToCleanup,_newTime)
 		} else {
-			_currentTime = _times select _index;
+			_currentTime = _timesWhenToCleanup select _index;
 			if(_currentTime>_newTime) then {		
-				_times set[_index, _newTime];
+				_timesWhenToCleanup set[_index, _newTime];
 			}; 
 		};			   
 	};
+};
+
+_removeFromCleanup = {
+	_object = _this select 0;
+	_index = _objectsToCleanup find _object;
+	if(_index != -1) then {
+		_objectsToCleanup set[_index, 0];
+		_timesWhenToCleanup set[_index, 0]; 
+	};			   
 };
 
 
@@ -74,38 +83,13 @@ while{true} do {
 
 	sleep 10;
     	
-	if (_ttdBodies>0) then {
-		{
-			if(!isPlayer _x) then { 	 
-				[_x, _ttdBodies] call _delete;
-			}; 
-		} forEach allDeadMen;
-	};	
-	
-	if (_ttdVehiclesDead>0) then {		
-		{
-			if(!isPlayer _x) then { 	 
-				[_x, _ttdVehiclesDead] call _delete;
-			}; 
-		} forEach (allDead - allDeadMen);
-	};
-	
-	if (_ttdVehiclesImmobile>0) then {		
-		{
-			if(!isPlayer _x && !canMove _x) then { 	 
-				[_x, _ttdVehiclesImmobile] call _delete;
-			}; 
-		} forEach vehicles;
-	};
-
-
 	{	
 	    _unit = _x;
 	    
 		if (_ttdWeapons>0) then {
 			{
 				{ 	 
-					[_x, _ttdWeapons] call _delete;			
+					[_x, _ttdWeapons] call _addToCleanup;			
 				} forEach (getpos _unit nearObjects [_x, 100]);
 			} forEach ["WeaponHolder","GroundWeaponHolder","WeaponHolderSimulated"];
 		};
@@ -113,7 +97,7 @@ while{true} do {
 		if (_ttdPlanted>0) then {
 			{
 				{ 
-					[_x, _ttdPlanted] call _delete;  
+					[_x, _ttdPlanted] call _addToCleanup;  
 				} forEach (getpos _unit nearObjects [_x, 100]);
 			} forEach ["TimeBombCore"];
 		};
@@ -121,7 +105,7 @@ while{true} do {
 		if (_ttdSmokes>0) then {
 			{
 				{ 	 
-					[_x, _ttdSmokes] call _delete; 
+					[_x, _ttdSmokes] call _addToCleanup; 
 				} forEach (getpos _unit nearObjects [_x, 100]);
 			} forEach ["SmokeShell"];
 		};
@@ -133,22 +117,49 @@ while{true} do {
 			deleteGroup _x;
 		};
 	} forEach allGroups;
-		
+	
+	if (_ttdBodies>0) then {
+		{
+			[_x, _ttdBodies] call _addToCleanup;
+		} forEach allDeadMen;
+	};	
+	
+	if (_ttdVehiclesDead>0) then {		
+		{
+			if(_x == vehicle _x) then { // make sure its vehicle 	 
+				[_x, _ttdVehiclesDead] call _addToCleanup;
+			}; 
+		} forEach (allDead - allDeadMen); // all dead without dead men == mostly dead vehicles
+	};
+	
+	if (_ttdVehiclesImmobile>0) then {		
+		{
+			if(!canMove _x && {alive _x}count crew _x==0) then { 	 
+				[_x, _ttdVehiclesImmobile] call _addToCleanup;
+			} else {
+				[_x] call _removeFromCleanup;
+			}; 
+		} forEach vehicles;
+	};
+
+						
+	REM(_objectsToCleanup,0)
+	REM(_timesWhenToCleanup,0)
 
 	{        
 		if(isNull(_x)) then {
-			_objects set[_forEachIndex, 0];
-			_times set[_forEachIndex, 0];
+			_objectsToCleanup set[_forEachIndex, 0];
+			_timesWhenToCleanup set[_forEachIndex, 0];
 		} else {
-			if(_times select _forEachIndex < time) then {
+			if(_timesWhenToCleanup select _forEachIndex < time) then {
 				deleteVehicle _x;
-				_objects set[_forEachIndex, 0];
-				_times set[_forEachIndex, 0];			 	
+				_objectsToCleanup set[_forEachIndex, 0];
+				_timesWhenToCleanup set[_forEachIndex, 0];			 	
 			};
 		};	
-	} forEach _objects;
+	} forEach _objectsToCleanup;
 	
-	REM(_objects,0)
-	REM(_times,0)
+	REM(_objectsToCleanup,0)
+	REM(_timesWhenToCleanup,0)
 				
 };
