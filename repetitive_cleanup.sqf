@@ -37,7 +37,7 @@ if (!isServer) exitWith {}; // isn't server
 #define PUSH(A,B) A set [count (A),B];
 #define REM(A,B) A=A-[B];
 
-private ["_ttdBodies","_ttdVehiclesDead","_ttdVehiclesImmobile","_ttdWeapons","_ttdPlanted","_ttdSmokes","_addToCleanup","_unit","_objectsToCleanup","_timesWhenToCleanup","_addToCleanup","_removeFromCleanup"];
+private ["_ttdBodies","_ttdVehiclesDead","_ttdVehiclesImmobile","_ttdWeapons","_ttdPlanted","_ttdSmokes","_addToCleanup","_unit","_objectsToCleanup","_timesWhenToCleanup","_removeFromCleanup"];
 
 _ttdBodies=[_this,0,0,[0]] call BIS_fnc_param;
 _ttdVehiclesDead=[_this,1,0,[0]] call BIS_fnc_param;
