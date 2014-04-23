@@ -2,14 +2,16 @@
 
 	AUTHOR: aeroson	
 	NAME: chemlights.sqf	
-	VERSION: 1.1
-	
+	VERSION: 1.2
+
 	DOWNLOAD & PARTICIPATE:
 	https://github.com/aeroson/a3-misc
 	http://forums.bistudio.com/showthread.php?163206-Group-Manager
 	
-	REQUIRES: group_manager.sqf
+	CONTRIBUTOR: Rafael09ED
 	
+	REQUIRES: group_manager.sqf
+
 	DESCRIPTION:
 	Port of chemlights from pokertour's =ATM= Air Drop http://forums.bistudio.com/showthread.php?157793-ATM-Airdrop-A3-Beta	
 	
@@ -18,7 +20,7 @@
 	0 = [] execVM 'chemlights.sqf';
 	or if you want to use chemlights from your inventory do:
 	0 = [true] execVM 'chemlights.sqf';
-			
+
 */
 
 #define PREFIX aero
@@ -72,7 +74,8 @@ GVAR(menu_main)={
 		["<t color='#B40404'>Attach Red Chemlight ...</t>", { _THIS(3) call GVAR(menu_shoulder); }, ["B40404","Chemlight_red"],5090],
 		["<t color='#30fd07'>Attach Green Chemlight ...</t>", { _THIS(3) call GVAR(menu_shoulder); }, ["30fd07","Chemlight_green"],5080],
 		["<t color='#68ccf6'>Attach Blue Chemlight ...</t>", { _THIS(3) call GVAR(menu_shoulder); }, ["68ccf6","Chemlight_blue"],5070],
-		["<t color='#fcf018'>Attach Yellow Chemlight ...</t>", { _THIS(3) call GVAR(menu_shoulder); }, ["fcf018","Chemlight_yellow"],5060]
+		["<t color='#fcf018'>Attach Yellow Chemlight ...</t>", { _THIS(3) call GVAR(menu_shoulder); }, ["fcf018","Chemlight_yellow"],5060],
+		["Attach IR Strobe ...", { _THIS(3) call GVAR(menu_shoulder); }, ["#ffffff","B_IRStrobe"],5050]
 	];	
 	if(count GVAR(attached)>0) then {
 		(player addAction ["<t color='#cccccc'>Detach chemlights</t>", { _THIS(3) call GVAR(chemlights_detach); },[],3000]) call aero_gm_actions_addId;		
@@ -110,6 +113,9 @@ GVAR(chemlight_attach) = {
 GVAR(chemlights_detach) = {
 	[] call aero_gm_menu_main;
 	{
+		detach _x;
+		_x setPosATL [-10000,-10000,100000];
+		Sleep 0.1;
 		deletevehicle _x;
 	} forEach GVAR(attached);
 	GVAR(attached)=[];
@@ -123,6 +129,5 @@ GVAR(chemlights_detach) = {
 	true,
 	true,
 	"",
-	"({_x in ['Chemlight_red','Chemlight_green','Chemlight_blue','Chemlight_yellow']} count magazines player > 0) || count aero_chemlights_attached > 0"
+	"({_x in ['Chemlight_red','Chemlight_green','Chemlight_blue','Chemlight_yellow','B_IRStrobe']} count magazines player > 0) || count aero_chemlights_attached > 0"
 ] call aero_gm_actions_add;
-
