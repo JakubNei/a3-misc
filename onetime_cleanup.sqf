@@ -1,7 +1,7 @@
 /*
 	
 	AUTHOR: aeroson
-	NAME: onetime_cleanup.wqf
+	NAME: onetime_cleanup.sqf
 	VERSION: 1.1
 	
 	DESCRIPTION:
