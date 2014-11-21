@@ -8,6 +8,9 @@
 	Can delete everything that is not really needed 
 	dead bodies, dropped items, smokes, chemlights, explosives, empty groups
 	Works even on Altis, it eats only items which are/were 100m from all units
+	beware: if weapons on ground is intentional e.g. fancy weapons stack, it will delete them too
+	beware: if dead bodies are intentional it will delete them to
+	beware: if destroyed vehicles intentional it will delete them to
 	
 	USAGE:
 	in server's init
