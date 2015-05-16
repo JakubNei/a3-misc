@@ -63,4 +63,4 @@ if("wrecks" in _whatToRemove) then {
 	} forEach vehicles;
 };
 
-hint format ["Cleanup took %1 seconds\nwrecks deleted: %2\ndropped items deleted: %3\ncorpses deleted: %4\nin radius: %5",diag_tickTime - _start, _deletedWrecks, _deletedDroppedItems, _deletedCorpses, _radius];
+hint format ["Cleanup took %1 seconds\nwrecks deleted: %2\ndropped items deleted: %3\ncorpses deleted: %4\nin radius: %5 m",diag_tickTime - _start, _deletedWrecks, _deletedDroppedItems, _deletedCorpses, _radius];
