@@ -1,7 +1,7 @@
 /*
 	
 	AUTHOR: aeroson
-	NAME: protection zones
+	NAME: protection_zones.sqf
 	VERSION: 1
 	
 	DOWNLOAD & PARTICIPATE:
@@ -10,6 +10,8 @@
 	DESCRIPTION:
 	creates protection zones on markers named pz_X
 	where X is number from 0 incremented by 1
+	protecion zone is an invisible object thru which you can not shoot or throw grenades
+	in rare cases saw it to also disallow vehicles to pass thru
 	
 	CREDITS:
 	stole the protection zones from Xeno's domination
