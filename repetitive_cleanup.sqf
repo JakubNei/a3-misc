@@ -1,168 +1,227 @@
 /*
-	
+
 	AUTHOR: aeroson
 	NAME: repetitive_cleanup.sqf
-	VERSION: 1.9
-	
+	VERSION: 2.0
+
 	DESCRIPTION:
-	Can delete everything that is not really needed 
+	Can delete everything that is not really needed
 	dead bodies, dropped items, smokes, chemlights, explosives, empty groups
 	Works even on Altis, it eats only items which are/were 100m from all units
 	beware: if weapons on ground is intentional e.g. fancy weapons stack, it will delete them too
 	beware: if dead bodies are intentional it will delete them to
 	beware: if destroyed vehicles intentional it will delete them to
-	
-	USAGE:
-	in server's init
-	[
-		60, // seconds to delete dead bodies (0 means don't delete) 
-		5*60, // seconds to delete dead vehicles (0 means don't delete)
-		3*60, // seconds to delete immobile vehicles (0 means don't delete)
-		2*60, // seconds to delete dropped weapons (0 means don't delete)
-		10*60, // seconds to deleted planted explosives (0 means don't delete)
-		0 // seconds to delete dropped smokes/chemlights (0 means don't delete)
-	] execVM 'repetitive_cleanup.sqf';	
-	
-	will delete dead bodies after 60 seconds (1 minute)
-	will delete dead vehicles after 5*60 seconds (5 minutes)
-	will delete immobile vehicles after 3*60 seconds (3 minutes)	
-	will delete weapons after 2*60 seconds (2 minutes)
-	will delete planted explosives after 10*60 seconds (10 minutes)
-	will not delete any smokes/chemlights since its disabled (set to 0)
-	
 	If you want something to withstand the clean up, paste this into it's init:
 	this setVariable["persistent",true];
-		
+
+	USAGE:
+	paste into init
+	[] execVM 'repetitive_cleanup.sqf';
+	then open the script and adjust values in CNFIGURATION section
+
 */
 
-if (!isServer) exitWith {}; // isn't server         
+if (!isServer) exitWith {}; // isn't server
 
-#define PUSH(A,B) A set [count (A),B];
-#define REM(A,B) A=A-[B];
-
-private ["_ttdBodies","_ttdVehiclesDead","_ttdVehiclesImmobile","_ttdWeapons","_ttdPlanted","_ttdSmokes","_addToCleanup","_unit","_objectsToCleanup","_timesWhenToCleanup","_removeFromCleanup"];
-
-_ttdBodies=[_this,0,0,[0]] call BIS_fnc_param;
-_ttdVehiclesDead=[_this,1,0,[0]] call BIS_fnc_param;
-_ttdVehiclesImmobile=[_this,2,0,[0]] call BIS_fnc_param;
-_ttdWeapons=[_this,3,0,[0]] call BIS_fnc_param;
-_ttdPlanted=[_this,4,0,[0]] call BIS_fnc_param;
-_ttdSmokes=[_this,5,0,[0]] call BIS_fnc_param;
-
-if({_x>0}count _this==0) exitWith {}; // all times are 0, we do not want to run this script at all
+#define COMPONENT repetitiveCleanup
+#define DOUBLES(A,B) ##A##_##B
+#define TRIPLES(A,B,C) ##A##_##B##_##C
+#define QUOTE(A) #A
+#define GVAR(A) DOUBLES(COMPONENT,A)
+#define QGVAR(A) QUOTE(GVAR(A))
 
 
-_objectsToCleanup=[];
-_timesWhenToCleanup=[];
+if (!isNil{GVAR(isRunning)} && {GVAR(isRunning)}) then { // reset if already running
+	GVAR(isRunning)=false;
+	waitUntil{isNil{GVAR(isRunning)}};
+};
+GVAR(isRunning)=true;
 
-_addToCleanup = {
-	_object = _this select 0;
-	if(!(_object getVariable["persistent",false])) then {
-		_newTime = (_this select 1)+time;
-		_index = _objectsToCleanup find _object;
+//==================================================================================//
+//=============================== CNFIGURATION start ===============================//
+//==================================================================================//
+
+
+_ttdBodies = 10; //5*60; // seconds to delete dead bodies (0 means don't delete)
+_ttdVehiclesDead = 0; // seconds to delete dead vehicles (0 means don't delete)
+_ttdVehiclesImmobile = 0; // seconds to delete immobile vehicles (0 means don't delete)
+
+GVAR(deleteClassesConfig) = [
+	[5*60, ["WeaponHolder","GroundWeaponHolder","WeaponHolderSimulated"]],
+	[60*60, ["TimeBombCore"]],
+	[10*60, ["SmokeShell"]],
+	[5*60, ["CraterLong_small","CraterLong"]],
+	[20*60, ["AGM_SpareWheel","AGM_JerryCan","AGM_SpareTrack","AGM_FastRoping_Helper"]],
+	[20*60, ["#dynamicsound","#destructioneffects","#track","#particlesource"]]
+];
+
+GVAR(resetTimeIfPlayerIsWithin) = 100; // how far away from object player needs to be so it can delete
+
+//==================================================================================//
+//=============================== CNFIGURATION end =================================//
+//==================================================================================//
+
+
+
+
+GVAR(objectsToCleanup)=[];
+GVAR(timesWhenToCleanup)=[];
+GVAR(originalCleanupDelays)=[];
+GVAR(resetTimeIfPlayerNearby)=[]; // might want to do it on my own in more effective way
+
+GVAR(deleteThoseIndexes)=[];
+
+
+private ["_markArraysForCleanupAt", "_cleanupArrays"];
+
+#define IS_SANE(OBJECT) !isNil{OBJECT} && {!isNull(OBJECT)}
+
+_markArraysForCleanupAt = {
+	params [
+		"_index"
+	];
+	GVAR(deleteThoseIndexes) pushBack _index;
+};
+
+_cleanupArrays = {
+	GVAR(deleteThoseIndexes) sort false;
+	{
+		GVAR(objectsToCleanup) deleteAt _x;
+		GVAR(timesWhenToCleanup) deleteAt _x;
+		GVAR(originalCleanupDelays) deleteAt _x;
+		GVAR(resetTimeIfPlayerNearby) deleteAt _x;
+	} forEach GVAR(deleteThoseIndexes);
+	GVAR(deleteThoseIndexes) = [];
+};
+
+
+
+GVAR(addToCleanup) = {
+	params [
+		"_object",
+		["_delay", 60, [0]],
+		["_resetTimerIfPlayerNearby", true, [true,false]],
+		["_resetValuesIfObjectAlreadyPresent", false, [true,false]]
+	];
+	private ["_newTime", "_index", "_currentTime"];
+	if(IS_SANE(_object) && {!(_object getVariable["persistent",false])}) then {
+		_newTime = _delay + time;
+		_index = GVAR(objectsToCleanup) find _object;
 		if(_index == -1) then {
-			PUSH(_objectsToCleanup,_object)
-			PUSH(_timesWhenToCleanup,_newTime)
+			GVAR(objectsToCleanup) pushBack _object;
+			GVAR(timesWhenToCleanup) pushBack _newTime;
+			GVAR(originalCleanupDelays) pushBack _delay;
+			GVAR(resetTimeIfPlayerNearby) pushBack _resetTimerIfPlayerNearby;
 		} else {
-			_currentTime = _timesWhenToCleanup select _index;
-			if(_currentTime>_newTime) then {		
-				_timesWhenToCleanup set[_index, _newTime];
-			}; 
-		};			   
+			if(_resetValuesIfObjectAlreadyPresent) then {
+				GVAR(timesWhenToCleanup) set[_index, _newTime];
+				GVAR(originalCleanupDelays) set[_index, _delay];
+				GVAR(resetTimeIfPlayerNearby) set[_index, _resetTimerIfPlayerNearby];
+			};
+		};
 	};
 };
 
-_removeFromCleanup = {
-	_object = _this select 0;
-	_index = _objectsToCleanup find _object;
-	if(_index != -1) then {
-		_objectsToCleanup set[_index, 0];
-		_timesWhenToCleanup set[_index, 0]; 
-	};			   
+GVAR(removeFromCleanup) = {
+	params [
+		"_object"
+	];
+	if(!isNil{_object} && {!isNull(_object)}) then {
+		_index = GVAR(objectsToCleanup) find _object;
+		if(_index!=-1) then {
+			[_index] call _markArraysForCleanupAt;
+		};
+	};
 };
 
 
-while{true} do {
+private ["_playerPositions", "_unit", "_myPos", "_delay", "_newTime", "_object", "_objectIndex"];
 
-	sleep 10;
-    	
-	{	
-	    _unit = _x;
-	    
-		if (_ttdWeapons>0) then {
-			{
-				{ 	 
-					[_x, _ttdWeapons] call _addToCleanup;			
-				} forEach (getpos _unit nearObjects [_x, 100]);
-			} forEach ["WeaponHolder","GroundWeaponHolder","WeaponHolderSimulated"];
-		};
-		
-		if (_ttdPlanted>0) then {
-			{
-				{ 
-					[_x, _ttdPlanted] call _addToCleanup;  
-				} forEach (getpos _unit nearObjects [_x, 100]);
-			} forEach ["TimeBombCore"];
-		};
-		
-		if (_ttdSmokes>0) then {
-			{
-				{ 	 
-					[_x, _ttdSmokes] call _addToCleanup; 
-				} forEach (getpos _unit nearObjects [_x, 100]);
-			} forEach ["SmokeShell"];
-		};
-	
-	} forEach allUnits;
-	
-	{
+while{GVAR(isRunning)} do {
+
+	sleep 2;
+
+    {
+    	_object = _x;
+		{
+	    	_timeToDelete = _x select 0;
+	    	_clasesToDelete = _x select 1;
+	    	if(_timeToDelete>0) then {
+		    	{
+					if( (typeof _object == _x) || {(_object isKindOf _x)} ) then {
+						[_object, _timeToDelete, true, false] call GVAR(addToCleanup);
+					};
+				} forEach _clasesToDelete;
+			};
+	    } forEach GVAR(deleteClassesConfig);
+	} forEach allMissionObjects "";
+
+
+	/*{ // might be causing some groping bugs
 		if ((count units _x)==0) then {
 			deleteGroup _x;
 		};
-	} forEach allGroups;
-	
+	} forEach allGroups;*/
+
+
 	if (_ttdBodies>0) then {
 		{
-			[_x, _ttdBodies] call _addToCleanup;
+			[_x, _ttdBodies, true, false] call GVAR(addToCleanup);
 		} forEach allDeadMen;
-	};	
-	
-	if (_ttdVehiclesDead>0) then {		
+	};
+
+	if (_ttdVehiclesDead>0) then {
 		{
-			if(_x == vehicle _x) then { // make sure its vehicle 	 
-				[_x, _ttdVehiclesDead] call _addToCleanup;
-			}; 
+			if(_x == vehicle _x) then { // make sure its vehicle
+				[_x, _ttdVehiclesDead, true, false] call GVAR(addToCleanup);
+			};
 		} forEach (allDead - allDeadMen); // all dead without dead men == mostly dead vehicles
 	};
-	
-	if (_ttdVehiclesImmobile>0) then {		
+
+	if (_ttdVehiclesImmobile>0) then {
 		{
-			if(!canMove _x && {alive _x}count crew _x==0) then { 	 
-				[_x, _ttdVehiclesImmobile] call _addToCleanup;
+			if(!canMove _x && {alive _x}count crew _x==0) then {
+				[_x, _ttdVehiclesImmobile, true, false] call GVAR(addToCleanup);
 			} else {
-				[_x] call _removeFromCleanup;
-			}; 
+				[_x] call GVAR(removeFromCleanup);
+			};
 		} forEach vehicles;
 	};
 
-						
-	REM(_objectsToCleanup,0)
-	REM(_timesWhenToCleanup,0)
+	_playerPositions = [];
+	{
+		_playerPositions pushBack (getPosATL _x);
+	} forEach allPlayers;
 
-	{        
-		if(isNull(_x)) then {
-			_objectsToCleanup set[_forEachIndex, 0];
-			_timesWhenToCleanup set[_forEachIndex, 0];
+
+	GVAR(resetTimeIfPlayerIsWithin)Sqr = GVAR(resetTimeIfPlayerIsWithin) * GVAR(resetTimeIfPlayerIsWithin);
+
+	call _cleanupArrays;
+	{
+		_object = _x;
+		_objectIndex = _forEachIndex;
+		if(IS_SANE(_object)) then {
+			[_objectIndex] call _markArraysForCleanupAt;
 		} else {
-			if(_timesWhenToCleanup select _forEachIndex < time) then {
-				deleteVehicle _x;
-				_objectsToCleanup set[_forEachIndex, 0];
-				_timesWhenToCleanup set[_forEachIndex, 0];			 	
+			if((GVAR(timesWhenToCleanup) select _objectIndex) < time) then {
+				[_objectIndex] call _markArraysForCleanupAt;
+				deleteVehicle _object; // hideBody _object; sometimes doesn't work while deleteVehicle works always
+			} else {
+				if(GVAR(resetTimeIfPlayerNearby) select _objectIndex) then {
+					_myPos = getPosATL _object;
+					{
+						if( (_myPos distanceSqr _x) < GVAR(resetTimeIfPlayerIsWithin)Sqr) exitWith {
+							_delay = GVAR(originalCleanupDelays) select _objectIndex;
+							_newTime = _delay + time;
+							GVAR(timesWhenToCleanup) set[_objectIndex, _newTime];
+						};
+					} forEach _playerPositions;
+				};
 			};
-		};	
-	} forEach _objectsToCleanup;
-	
-	REM(_objectsToCleanup,0)
-	REM(_timesWhenToCleanup,0)
-				
+		};
+	} forEach GVAR(objectsToCleanup);
+	call _cleanupArrays;
+
 };
+
+GVAR(isRunning) = nil;
