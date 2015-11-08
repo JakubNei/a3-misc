@@ -5,12 +5,13 @@
 	VERSION: 2.0
 
 	DESCRIPTION:
-	Can delete everything that is not really needed
-	dead bodies, dropped items, smokes, chemlights, explosives, empty groups
-	Works even on Altis, it eats only items which are/were 100m from all units
-	beware: if weapons on ground is intentional e.g. fancy weapons stack, it will delete them too
-	beware: if dead bodies are intentional it will delete them to
-	beware: if destroyed vehicles intentional it will delete them to
+	Can delete everything that is not really needed:
+	dead bodies, dropped items, smokes, chemlights, explosives, times and classes can be specified
+	Beware: if weapons on ground is intentional e.g. fancy weapons stack, it will delete them too.
+	Beware: if dead bodies are intentional it will delete them too.
+	Beware: if destroyed vehicles intentional it will delete them too.
+	Uses allMissionObjects "" to iterate over all objects.
+	Adds objects for deletion only if players are specified distance away from them.
 	If you want something to withstand the clean up, paste this into it's init:
 	this setVariable["persistent",true];
 
@@ -139,7 +140,7 @@ private ["_playerPositions", "_unit", "_myPos", "_delay", "_newTime", "_object",
 
 while{GVAR(isRunning)} do {
 
-	sleep 2;
+    sleep 2;
 
     {
     	_object = _x;
@@ -157,7 +158,7 @@ while{GVAR(isRunning)} do {
 	} forEach allMissionObjects "";
 
 
-	/*{ // might be causing some groping bugs
+	/*{ // might be causing some bugs in other scripts
 		if ((count units _x)==0) then {
 			deleteGroup _x;
 		};
