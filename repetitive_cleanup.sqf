@@ -42,9 +42,9 @@ GVAR(isRunning)=true;
 //==================================================================================//
 
 
-_ttdBodies = 10; //5*60; // seconds to delete dead bodies (0 means don't delete)
-_ttdVehiclesDead = 0; // seconds to delete dead vehicles (0 means don't delete)
-_ttdVehiclesImmobile = 0; // seconds to delete immobile vehicles (0 means don't delete)
+_ttdBodies = 1*60; // seconds to delete dead bodies (0 means don't delete)
+_ttdVehiclesDead = 5*60; // seconds to delete dead vehicles (0 means don't delete)
+_ttdVehiclesImmobile = 10*60; // seconds to delete immobile vehicles (0 means don't delete)
 
 GVAR(deleteClassesConfig) = [
 	[5*60, ["WeaponHolder","GroundWeaponHolder","WeaponHolderSimulated"]],
