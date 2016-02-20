@@ -23,7 +23,7 @@
 	paste into init
 	[] execVM 'repetitive_cleanup.sqf';
 	then open the script and adjust values in CNFIGURATION section
-	You also need to disable Bohemia's garbage collector, seems its enabled even thou wiki says otherwise.
+	You might also need to disable Bohemia's garbage collector, seems it's enabled by default despite wiki saying otherwise.
 	Source: https://community.bistudio.com/wiki/Description.ext
 	Add the following into your description.ext:
 	corpseManagerMode = 0;
