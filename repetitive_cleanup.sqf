@@ -5,13 +5,17 @@
 	VERSION: 2.0
 
 	DESCRIPTION:
-	Can delete everything that is not really needed:
-	dead bodies, dropped items, smokes, chemlights, explosives, times and classes can be specified
+	Custom made, used and tested garbage collector.
+	Improves performance for everyone by deleting things that are not seen by players.
+	Can delete everything that is not really needed.
+	By default: dead bodies, dropped items, smokes, chemlights, explosives, times and classes can be specified
+	You can add your own classes to delete and or change times.
 	Beware: if weapons on ground is intentional e.g. fancy weapons stack, it will delete them too.
 	Beware: if dead bodies are intentional it will delete them too.
 	Beware: if destroyed vehicles intentional it will delete them too.
-	Uses allMissionObjects "" to iterate over all objects.
+	Uses allMissionObjects "" to iterate over all objects, so it is fast.
 	Adds objects for deletion only if players are specified distance away from them.
+	Never again it will happen that vehicle, item or body is delete in front of players' eyes.
 	If you want something to withstand the clean up, paste this into it's init:
 	this setVariable["persistent",true];
 
@@ -19,6 +23,11 @@
 	paste into init
 	[] execVM 'repetitive_cleanup.sqf';
 	then open the script and adjust values in CNFIGURATION section
+	You also need to disable Bohemia's garbage collector, seems its enabled even thou wiki says otherwise.
+	Source: https://community.bistudio.com/wiki/Description.ext
+	Add the following into your description.ext:
+	corpseManagerMode = 0;
+	wreckManagerMode = 0;
 
 */
 
