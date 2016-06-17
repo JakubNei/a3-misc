@@ -7,11 +7,23 @@
 	DESCRIPTION:
 	If vehicle's angle to ground is over 45 and vehicle has no alive crew,
 	shows Unflip vehicle action in player's action menu
-	
+
 	USAGE:
 	paste this into init.sqf
 	0 = [] execVM 'unflip_vehicle.sqf';
-			
+		
+	Technically there are two ways to unflip vehicle, this script uses the first one:
+	1) Align vehicle back to the surface normal.
+	   CONS: This can cause physics to go crazy, because if we change angle of the vehicle
+	    	 it might be inside object, so you have to disable damage and set velocity back to 0.
+	    	 It can also hurt or kill nearby players.
+	   PROS: This unflips the vehicle at the nearest possible location. The vehicle can still be
+	         stuck inside e.g. house, but will be unfliped. Vehicle is moved with physics.
+	2) Use findEmptyPosition. (Or create invisible helipad instead of findEmptyPosition)
+	   CONS: The new location is guaranteeed to be empty. This can also cause the vehicle to be moved
+	         very far away. The vehicle is teleported.
+	   PROS: No damage to vehicle. No damage to players
+
 */
 
 if(!hasInterface) exitWith { }; // exit if we are not a player
